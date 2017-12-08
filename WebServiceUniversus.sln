@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebServiceUniversus", "WebServiceUniversus\WebServiceUniversus.csproj", "{72AF3112-6914-4F07-9AA1-0A6CEB5B03E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatabaseLib", "ClassLibrary1\DatabaseLib.csproj", "{60EA9723-EBC5-4E26-919F-8D6D9641155B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{72AF3112-6914-4F07-9AA1-0A6CEB5B03E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72AF3112-6914-4F07-9AA1-0A6CEB5B03E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72AF3112-6914-4F07-9AA1-0A6CEB5B03E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72AF3112-6914-4F07-9AA1-0A6CEB5B03E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60EA9723-EBC5-4E26-919F-8D6D9641155B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60EA9723-EBC5-4E26-919F-8D6D9641155B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60EA9723-EBC5-4E26-919F-8D6D9641155B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60EA9723-EBC5-4E26-919F-8D6D9641155B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
