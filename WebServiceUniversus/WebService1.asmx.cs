@@ -68,12 +68,12 @@ namespace WebServiceUniversus
         <br>int - number of delete students")]
         public int deleteAllStudents()
         {
-            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-                && AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id)
-            {
+            //if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
+            //    && AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id)
+            //{
                 return StudentDAO.deleteAll();
-            }
-            return -1;
+            //}
+            //return -1;
         }
 
         [SoapHeader("Authentication", Required = true)]

@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -182,8 +183,8 @@ namespace DatabaseLib
             {
                 conn = getConnection();
                 conn.Open();
-                MySqlCommand cmd = conn.CreateCommand();
-                cmd.CommandText = sqlQuery;
+                MySqlCommand cmd = new MySqlCommand("delete_all_students", conn);
+                cmd.CommandType = CommandType.StoredProcedure;
                 return cmd.ExecuteNonQuery();
 
             }
