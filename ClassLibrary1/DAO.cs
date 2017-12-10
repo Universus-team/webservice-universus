@@ -178,7 +178,6 @@ namespace DatabaseLib
         public static int deleteAll()
         {
             MySqlConnection conn = null;
-            string sqlQuery = "DELETE FROM Student";
             try
             {
                 conn = getConnection();
@@ -557,7 +556,7 @@ namespace DatabaseLib
         }
     }
 
-    class SpecialityDAO : DAO
+    public class SpecialityDAO : DAO
     {
         public static int add(string name, string specialityCode, string description)
         {
@@ -859,7 +858,7 @@ namespace DatabaseLib
         public static StudentGroup getById(int id)
         {
             MySqlConnection conn = null;
-            string sqlQuery = @"SELECT name, created_date, email, leader_id, manager_id
+            string sqlQuery = @"SELECT id, name, created_date, email, leader_id, manager_id
                                 FROM student_group WHERE id = @Id;";
             try
             {
@@ -895,6 +894,33 @@ namespace DatabaseLib
                 }
             }
             return null;
+        }
+
+        public static int deleteAll()
+        {
+            MySqlConnection conn = null;
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand("delete_all_student_groups", conn);
+                cmd.CommandType = CommandType.StoredProcedure;
+                return cmd.ExecuteNonQuery();
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
         }
     }
 }

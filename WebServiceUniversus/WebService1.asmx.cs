@@ -45,6 +45,16 @@ namespace WebServiceUniversus
             return StudentDAO.getById(Id);
         }
 
+        [WebMethod(Description = @"<H2>Get a speciality by Id</H2>
+        <br> <b>Parameters:</b>
+        <br> int Id - Id of speciality
+        <br> <b>Return:</b>
+        <br>speciality")]
+        public Speciality getSpecialityById(int Id)
+        {
+            return SpecialityDAO.getById(Id);
+        }
+
         [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description = @"<H2>Delete a student by Id</H2>
         <br> <b>Parameters:</b>
@@ -128,6 +138,8 @@ namespace WebServiceUniversus
             }
             return null;
         }
+
+
 
 
     }
