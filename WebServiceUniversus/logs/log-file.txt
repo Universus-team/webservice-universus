@@ -1,0 +1,14 @@
+2017-12-12 10:15:27,002 [10] DatabaseLib.StudentDAO.getById Get student by id0
+2017-12-12 10:38:44,988 [8] DatabaseLib.StudentDAO.add id = 16
+2017-12-12 10:38:56,841 [12] DatabaseLib.StudentDAO.add id = 17
+2017-12-12 10:39:15,516 [12] DatabaseLib.StudentDAO.deleteById id = 16
+2017-12-12 10:39:28,803 [5] DatabaseLib.StudentDAO.getAll MySql.Data.MySqlClient.MySqlException (0x80004005): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SELECTid, name, surname, email, phone_number, group_id from student' at line 1
+   at MySql.Data.MySqlClient.MySqlStream.ReadPacket()
+   at MySql.Data.MySqlClient.NativeDriver.GetResult(Int32& affectedRow, Int64& insertedId)
+   at MySql.Data.MySqlClient.Driver.GetResult(Int32 statementId, Int32& affectedRows, Int64& insertedId)
+   at MySql.Data.MySqlClient.Driver.NextResult(Int32 statementId, Boolean force)
+   at MySql.Data.MySqlClient.MySqlDataReader.NextResult()
+   at MySql.Data.MySqlClient.MySqlCommand.ExecuteReader(CommandBehavior behavior)
+   at MySql.Data.MySqlClient.MySqlCommand.ExecuteReader()
+   at DatabaseLib.StudentDAO.getAll() in C:\Users\mikhail\Documents\Visual Studio 2015\Projects\WebServiceUniversus\ClassLibrary1\DAO.cs:line 56
+2017-12-12 10:39:47,120 [11] DatabaseLib.StudentDAO.getById id = 0

@@ -5,11 +5,15 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using log4net;
+using log4net.Config;
 
 namespace DatabaseLib
 {
+
     public abstract class DAO
     {
+
         protected static string connectionString = "server=127.0.0.1;" +
             "uid=root;" +
             "pwd=3616;" +
@@ -19,6 +23,7 @@ namespace DatabaseLib
         {
 
         }
+
 
         protected static MySqlConnection getConnection()
         {
@@ -31,6 +36,13 @@ namespace DatabaseLib
 
     public class StudentDAO : DAO
     {
+        public static readonly ILog log = LogManager.GetLogger(typeof(StudentDAO));
+
+        static void Main()
+        {
+            XmlConfigurator.Configure();
+        }
+
         public static List<Student> getAll()
         {
             MySqlConnection conn = null;
@@ -53,12 +65,13 @@ namespace DatabaseLib
                     student.PhoneNumber = reader.GetString(4);
                     students.Add(student);
                 }
+                log.Info("Success");
                 return students;
 
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine("Error: {0}", ex.ToString());
+                log.Error(ex.ToString());
 
             }
             finally
@@ -90,6 +103,7 @@ namespace DatabaseLib
                 cmd.Parameters.AddWithValue("@email", s.Email);
                 cmd.Parameters.AddWithValue("@phone", s.PhoneNumber);
                 cmd.Parameters.AddWithValue("@group", s.GroupId);
+                log.Info("Id = "+studentId);
                 return cmd.ExecuteNonQuery();
             }
             catch (MySqlException ex)
@@ -127,13 +141,17 @@ namespace DatabaseLib
                     student.Email = reader.GetString(3);
                     student.PhoneNumber = reader.GetString(4);
                     student.GroupId = reader.GetInt32(5);
+                } else
+                {
+                    return null;
                 }
+                log.Info("id = "+student.Id);
                 return student;
 
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine("Error: {0}", ex.ToString());
+                log.Error(ex.ToString());
 
             }
             finally
@@ -157,12 +175,13 @@ namespace DatabaseLib
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
                 cmd.Parameters.AddWithValue("@Id", id);
+                log.Info("id = " + id);
                 return cmd.ExecuteNonQuery();
 
             }
             catch (MySqlException ex)
             {
-                Console.WriteLine("Error: {0}", ex.ToString());
+                log.Error(ex.ToString());
 
             }
             finally
@@ -184,6 +203,7 @@ namespace DatabaseLib
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand("delete_all_students", conn);
                 cmd.CommandType = CommandType.StoredProcedure;
+                log.Info("Success");
                 return cmd.ExecuteNonQuery();
 
             }
@@ -200,6 +220,43 @@ namespace DatabaseLib
                 }
             }
             return -1;
+        }
+
+        public static int add(Student st)
+        {
+            if (st == null) return 0;
+            MySqlConnection conn = null;
+            string sqlQuery = @"INSERT INTO student 
+                (name, surname, email, phone_number, group_id)
+                VALUES(@name, @sname, @email, @phone, @group);";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@name", st.Name);
+                cmd.Parameters.AddWithValue("@sname", st.Surname);
+                cmd.Parameters.AddWithValue("@email", st.Email);
+                cmd.Parameters.AddWithValue("@phone", st.PhoneNumber);
+                cmd.Parameters.AddWithValue("@group", st.GroupId);
+                cmd.ExecuteNonQuery();
+                int id = (int)cmd.LastInsertedId;
+                log.Error("id = " + id);
+                return id;
+            }
+            catch (MySqlException ex)
+            {
+                log.Error(ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -2;
         }
     }
 
@@ -421,6 +478,47 @@ namespace DatabaseLib
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
                 cmd.Parameters.AddWithValue("@id", userId);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                Message message = new Message();
+                if (reader.Read())
+                {
+                    message.Id = reader.GetInt32(0);
+                    message.FromUserId = reader.GetInt32(1);
+                    message.ToUserId = reader.GetInt32(2);
+                    message.MessageContent = reader.GetString(3);
+                    message.DateOfMessage = reader.GetDateTime(4);
+                    message.ItRead = reader.GetBoolean(5);
+                }
+                return message;
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static Message getById(int Id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT id, from_user_id, to_user_id, message_content, date_of_message, it_read
+                                FROM Message WHERE id = @id";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", Id);
                 MySqlDataReader reader = cmd.ExecuteReader();
                 Message message = new Message();
                 if (reader.Read())

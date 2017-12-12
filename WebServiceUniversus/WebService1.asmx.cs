@@ -45,15 +45,15 @@ namespace WebServiceUniversus
             return StudentDAO.getById(Id);
         }
 
-        [WebMethod(Description = @"<H2>Get a speciality by Id</H2>
-        <br> <b>Parameters:</b>
-        <br> int Id - Id of speciality
-        <br> <b>Return:</b>
-        <br>speciality")]
-        public Speciality getSpecialityById(int Id)
-        {
-            return SpecialityDAO.getById(Id);
-        }
+        //[WebMethod(Description = @"<H2>Get a speciality by Id</H2>
+        //<br> <b>Parameters:</b>
+        //<br> int Id - Id of speciality
+        //<br> <b>Return:</b>
+        //<br>speciality")]
+        //public Speciality getSpecialityById(int Id)
+        //{
+        //    return SpecialityDAO.getById(Id);
+        //}
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description = @"<H2>Delete a student by Id</H2>
@@ -63,13 +63,13 @@ namespace WebServiceUniversus
         <br>int - number of delete students")]
         public int deleteStudentById(int Id)
         {
-            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
-            {
+            //if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
+            //    && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+            //    || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
+            //{
                 return StudentDAO.deleteById(Id);
-            }
-            return -1;
+            //}
+            //return -1;
         }
 
         [SoapHeader("Authentication", Required = true)]
@@ -98,6 +98,15 @@ namespace WebServiceUniversus
                 return AccountDAO.add(username, password, RoleDAO.getByName("moderator").Id);
             }
             return -1;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description = @"<H2>Add new student</H2>
+        <br><b>Return:</b>
+        <br>int - 1 if student added, o if student did not add, -1 if error")]
+        public int addStudent(string name, string surname, string email, string phone_number, int group_id)
+        {
+             return StudentDAO.add(new Student(0, name, surname, email, phone_number, group_id));
         }
 
         [SoapHeader("Authentication", Required = true)]

@@ -12,18 +12,20 @@ namespace ClassLibrary1
     [TestFixture]
     class Test
     {
-        int testId = 0;
-        String testStr = "test";
-        DateTime testDate = new DateTime(1970, 01, 01);
-        int testInt = 1;
-
+        static int testId = 0;
+        static String testStr = "test";
+        static DateTime testDate = new DateTime(1970, 01, 01);
+        static bool testBool = true;
+        static int testInt = 1;
+        static Student student = new Student(testId, testStr, testStr, testStr,
+             testStr, testInt);
 
         [TestCase]
         public void getStudentById()
         {
             Student test = StudentDAO.getById(testId);
             Assert.NotNull(test);
-            Assert.AreEqual(test.Id, 0);
+            Assert.AreEqual(test.Id, testId);
             Assert.AreEqual(test.Name, testStr);
             Assert.AreEqual(test.Surname, testStr);
             Assert.AreEqual(test.Email, testStr);
@@ -36,7 +38,7 @@ namespace ClassLibrary1
         {
             StudentGroup test = StudentGroupDAO.getById(testId);
             Assert.NotNull(test);
-            Assert.AreEqual(test.Id, 0);
+            Assert.AreEqual(test.Id, testId);
             Assert.AreEqual(test.Name, testStr);
             Assert.AreEqual(test.CreatedDate, testDate);
             Assert.AreEqual(test.Email, testStr);
@@ -49,7 +51,7 @@ namespace ClassLibrary1
         {
             Speciality test = SpecialityDAO.getById(testId);
             Assert.NotNull(test);
-            Assert.AreEqual(test.Id, 0);
+            Assert.AreEqual(test.Id, testId);
             Assert.AreEqual(test.Name, testStr);
             Assert.AreEqual(test.SpecialityCode, testStr);
             Assert.AreEqual(test.Description, testStr);
@@ -60,7 +62,7 @@ namespace ClassLibrary1
         {
             Role test = RoleDAO.getById(testId);
             Assert.NotNull(test);
-            Assert.AreEqual(test.Id, 0);
+            Assert.AreEqual(test.Id, testId);
             Assert.AreEqual(test.Name, testStr);
         }
 
@@ -69,7 +71,7 @@ namespace ClassLibrary1
         {
             Account test = AccountDAO.getById(testId);
             Assert.NotNull(test);
-            Assert.AreEqual(test.Id, 0);
+            Assert.AreEqual(test.Id, testId);
             Assert.AreEqual(test.Username, testStr);
             Assert.AreEqual(test.PasswordMD5, testStr);
             Assert.AreEqual(test.RoleId, testInt);
@@ -80,11 +82,41 @@ namespace ClassLibrary1
         {
             Department test = DepartmentDAO.getById(testId);
             Assert.NotNull(test);
-            Assert.AreEqual(test.Id, 0);
+            Assert.AreEqual(test.Id, testId);
             Assert.AreEqual(test.Name, testStr);
             Assert.AreEqual(test.Email, testStr);
             Assert.AreEqual(test.PhoneNumber, testStr);
         }
 
+        [TestCase]
+        public void getUniversityById()
+        {
+            Unisersity test = UniversityDAO.getById(testId);
+            Assert.NotNull(test);
+            Assert.AreEqual(test.Id, testId);
+            Assert.AreEqual(test.Name, testStr);
+            Assert.AreEqual(test.HasStateAccreditation, testBool);
+            Assert.AreEqual(test.Address, testStr);
+        }
+
+        [TestCase]
+        public void getMessageById()
+        {
+            Message test = MessageDAO.getById(testId);
+            Assert.NotNull(test);
+            Assert.AreEqual(test.Id, testId);
+            Assert.AreEqual(test.FromUserId, testInt);
+            Assert.AreEqual(test.ToUserId, testInt);
+            Assert.AreEqual(test.MessageContent, testStr);
+            Assert.AreEqual(test.ItRead, testBool);
+        }
+
+        [TestCase]
+        public void deleteStudentById()
+        { 
+            int id = StudentDAO.add(student);
+            StudentDAO.deleteById(id);
+            Assert.Null(StudentDAO.getById(id));
+        }
     }
 }

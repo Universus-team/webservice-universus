@@ -59,12 +59,28 @@ namespace DatabaseLib
     [Serializable]
     public class Student
     {
+
+        public Student(int id, string name, string surname, string email, string phoneNumber, int groupId)
+        {
+            Id = id;
+            Name = name;
+            Surname = surname;
+            Email = email;
+            PhoneNumber = phoneNumber;
+            GroupId = groupId;
+        }
+
+        public Student()
+        {
+        }
+
         public int Id { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
         public int GroupId { get; set; }
+
     }
 
     [Serializable]
