@@ -305,7 +305,7 @@ namespace DatabaseLib
         public static Account getByUsername(string username)
         {
             MySqlConnection conn = null;
-            string sqlQuery = "SELECT id, username, password_md5, role_id FROM account WHERE id = @uname";
+            string sqlQuery = "SELECT id, username, password_md5, role_id FROM account WHERE username = @uname";
             try
             {
                 conn = getConnection();
@@ -396,8 +396,8 @@ namespace DatabaseLib
         {
             if (message == null) return 0;
             MySqlConnection conn = null;
-            string sqlQuery = @"INSERT INTO message (from_user_id, to_user_id, message, date_of_message)
-                VALUES(@from, @to, @msg, @date)";
+            string sqlQuery = @"INSERT INTO message (from_user_id, to_user_id, message_content, date_of_message)
+                VALUES (@from, @to, @msg, @date)";
             try
             {
                 conn = getConnection();
@@ -449,6 +449,92 @@ namespace DatabaseLib
                     message.ItRead = reader.GetBoolean(5);
                 }
                 return message;
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static List<string> getDialogs(int userId)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT account.username
+                                FROM Message, account 
+                                WHERE message.to_user_id = @id
+                                and account.id = message.from_user_id";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", userId);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                List<string> users = new List<string>();
+                while (reader.Read())
+                {
+                    users.Add(reader.GetString(0));
+                }
+                return users;
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static List<Message> getDialog(int to_id, int from_id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT id, from_user_id, to_user_id, message_content, date_of_message, it_read
+                                FROM Message 
+                                WHERE (to_user_id = @id1 and from_user_id = @id2) or
+                               (to_user_id = @id2 and from_user_id = @id1)";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id1", to_id);
+                cmd.Parameters.AddWithValue("@id2", from_id);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                List<Message> messages = new List<Message>();
+                while (reader.Read())
+                {
+                    Message message = new Message();
+                    message.Id = reader.GetInt32(0);
+                    message.FromUserId = reader.GetInt32(1);
+                    message.ToUserId = reader.GetInt32(2);
+                    message.MessageContent = reader.GetString(3);
+                    message.DateOfMessage = reader.GetDateTime(4);
+                    message.ItRead = true;
+                    MessageDAO.update(message.Id, message);
+                    messages.Add(message);
+                }
+                
+                return messages;
 
             }
             catch (MySqlException ex)
@@ -547,6 +633,78 @@ namespace DatabaseLib
             }
             return null;
         }
+
+        public static bool checkNewMessage(int toUserId, int fromUserId)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT COUNT(id)
+                                FROM Message WHERE from_user_id = @from and to_user_id = @to and it_read = 0";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@from", fromUserId);
+                cmd.Parameters.AddWithValue("@to", toUserId);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    int count = reader.GetInt32(0);
+                    return (count == 0) ? false : true;
+                }
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return false;
+        }
+
+        public static int update(int messageId, Message m)
+        {
+            if (m == null) return 0;
+            MySqlConnection conn = null;
+            string sqlQuery = @"UPDATE message 
+                                SET from_user_id=@from, to_user_id=@to, 
+                                    message_content = @msg, date_of_message=@date, it_read = @read
+                                WHERE id = @id;";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", messageId);
+                cmd.Parameters.AddWithValue("@from", m.FromUserId);
+                cmd.Parameters.AddWithValue("@to", m.ToUserId);
+                cmd.Parameters.AddWithValue("@msg", m.MessageContent);
+                cmd.Parameters.AddWithValue("@date", m.DateOfMessage);
+                cmd.Parameters.AddWithValue("@read", m.ItRead);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
+        }
     }
 
     public class RoleDAO : DAO
@@ -592,6 +750,43 @@ namespace DatabaseLib
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
                 cmd.Parameters.AddWithValue("@Id", id);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                Role role = new Role();
+                if (reader.Read())
+                {
+                    role.Id = reader.GetInt32(0);
+                    role.Name = reader.GetString(1);
+                }
+                return role;
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static Role getRoleByUserId(int id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT role.id, role.name FROM role, account 
+                WHERE account.id = @id and account.role_id = role.id";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", id);
                 MySqlDataReader reader = cmd.ExecuteReader();
                 Role role = new Role();
                 if (reader.Read())
