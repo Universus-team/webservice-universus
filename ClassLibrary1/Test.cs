@@ -42,7 +42,6 @@ namespace ClassLibrary1
             Assert.AreEqual(test.Name, testStr);
             Assert.AreEqual(test.CreatedDate, testDate);
             Assert.AreEqual(test.Email, testStr);
-            Assert.AreEqual(test.LeaderID, testInt);
             Assert.AreEqual(test.ManagerID, testInt);
         }
 
@@ -91,7 +90,7 @@ namespace ClassLibrary1
         [TestCase]
         public void getUniversityById()
         {
-            Unisersity test = UniversityDAO.getById(testId);
+            University test = UniversityDAO.getById(testId);
             Assert.NotNull(test);
             Assert.AreEqual(test.Id, testId);
             Assert.AreEqual(test.Name, testStr);

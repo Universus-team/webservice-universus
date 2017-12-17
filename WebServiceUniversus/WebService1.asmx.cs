@@ -5,7 +5,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Services;
 using System.Web.Services.Protocols;
-
+using System.Xml;
 
 namespace WebServiceUniversus
 {
@@ -35,6 +35,14 @@ namespace WebServiceUniversus
             return StudentDAO.getAll();
         }
 
+        [WebMethod(Description = @"<H2>Get all departments by university id</H2>
+           <br> <b>Return:</b>
+           <br>List of students")]
+        public List<Department> getAllDepartmentsByUniversityId(int id)
+        {
+            return DepartmentDAO.getAllByUniversityId(id);
+        }
+
         [WebMethod(Description = @"<H2>Get a student by Id</H2>
         <br> <b>Parameters:</b>
         <br> int Id - Id of Student
@@ -45,16 +53,6 @@ namespace WebServiceUniversus
             return StudentDAO.getById(Id);
         }
 
-        //[WebMethod(Description = @"<H2>Get a speciality by Id</H2>
-        //<br> <b>Parameters:</b>
-        //<br> int Id - Id of speciality
-        //<br> <b>Return:</b>
-        //<br>speciality")]
-        //public Speciality getSpecialityById(int Id)
-        //{
-        //    return SpecialityDAO.getById(Id);
-        //}
-
         [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description = @"<H2>Delete a student by Id</H2>
         <br> <b>Parameters:</b>
@@ -63,13 +61,13 @@ namespace WebServiceUniversus
         <br>int - number of delete students")]
         public int deleteStudentById(int Id)
         {
-            //if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-            //    && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-            //    || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
-            //{
+            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
+            {
                 return StudentDAO.deleteById(Id);
-            //}
-            //return -1;
+            }
+            return -1;
         }
 
         [SoapHeader("Authentication", Required = true)]
@@ -78,12 +76,12 @@ namespace WebServiceUniversus
         <br>int - number of delete students")]
         public int deleteAllStudents()
         {
-            //if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-            //    && AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id)
-            //{
+            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
+                && AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id)
+            {
                 return StudentDAO.deleteAll();
-            //}
-            //return -1;
+            }
+            return -1;
         }
 
         [SoapHeader("Authentication", Required = true)]
@@ -109,21 +107,159 @@ namespace WebServiceUniversus
              return StudentDAO.add(new Student(0, name, surname, email, phone_number, group_id));
         }
 
-        //[SoapHeader("Authentication", Required = true)]
-        //[WebMethod]
-        //public int addStudentToGroup(int studentId, int groupId)
-        //{
-        //    /*if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-        //        && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-        //        || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
-        //        || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
-        //    {*/
-        //    Student student = StudentDAO.getById(studentId);
-        //    student.GroupId = groupId;
-        //    return StudentDAO.update(studentId, student);
-        //    //}
-        //    return -1;
-        //}
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description = @"<H2>Add new university</H2>
+        <br><b>Return:</b>
+        <br>1 if university added,
+        <br> o if university did not add,
+        <br> -1 if error")]
+        public int addUniversity(University uni)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account != null &&
+                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
+            {
+
+                return UniversityDAO.add(uni);
+            }
+            return -1;
+        }
+
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description = @"<H2>Add new university departmaent</H2>
+        <br><b>Return:</b>
+        <br>1 if  university departmaent added,
+        <br> o if  university departmaent did not add,
+        <br> -1 if error")]
+        public int addDepartment(Department d)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account != null &&
+                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
+            {
+
+                return DepartmentDAO.add(d);
+            }
+            return -1;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description = @"<H2>Add new student_group</H2>
+        <br><b>Return:</b>
+        <br>1 if  student_group departmaent added,
+        <br> o if  student_group departmaent did not add,
+        <br> -1 if error")]
+        public int addStudentGroup(StudentGroup s)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account != null &&
+                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            {
+
+                return StudentGroupDAO.add(s);
+            }
+            return -1;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public List<StudentGroup> getAllStudenyGroupByManagerId(int id)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account != null &&
+                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            {
+
+                return StudentGroupDAO.getAllByManagerId(id);
+            }
+            return null;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addExamHistory(ExamHistory ex)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account != null &&
+                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            {
+
+                return ExamHistoryDAO.add(ex);
+            }
+            return -1;
+        }
+
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public List<ExamHistory> getAllExamHistoryByStudentId(int id)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account != null && AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5)
+            {
+
+                return ExamHistoryDAO.getAllByStudentId(account.Id);
+            }
+            return null;
+        }
+
+        [WebMethod]
+        public ExamStatus getExamStatusById(int id)
+        {
+            return ExamStatusDAO.getById(id);
+        }
+
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description = @"<H2>Add new exam</H2>
+        <br><b>Return:</b>
+        <br>1 if exam added,
+        <br> o if  exam did not add,
+        <br> -1 if error")]
+        public int addExam(Exam e)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account != null &&
+                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            {
+
+                return ExamDAO.add(e);
+            }
+            return -1;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addStudentToGroup(int studentId, int groupId)
+        {
+            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
+                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
+                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            {
+                Student student = StudentDAO.getById(studentId);
+            student.GroupId = groupId;
+            return StudentDAO.update(studentId, student);
+            }
+            return -1;
+        }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
@@ -150,6 +286,18 @@ namespace WebServiceUniversus
             return false;
         }
 
+        [WebMethod]
+        public List<University> getAllUniversities()
+        {
+            return UniversityDAO.getAll();
+        }
+
+        [WebMethod]
+        public List<Exam> getAllExams()
+        {
+            return Exa.getAll();
+        }
+
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
         public List<string> getDialogs()
@@ -174,7 +322,34 @@ namespace WebServiceUniversus
             return null;
         }
 
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public float passExam(Exam exam)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if ((account != null) && (AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5))
+            {
+                Exam originalExam = ExamDAO.getById(exam.Id);
+                XmlDocument xDoc1 = new XmlDocument();
+                xDoc1.LoadXml(exam.Content);
+                XmlElement xRoot = xDoc1.DocumentElement;
+                XmlNodeList items1 = xRoot.SelectNodes("//item");
 
+                XmlDocument xDoc2 = new XmlDocument();
+                xDoc1.LoadXml(originalExam.Content);
+                XmlElement xRoot2 = xDoc2.DocumentElement;
+                XmlNodeList items2 = xRoot2.SelectNodes("//item");
+                int incorrect = 0;
+                for (int i=0; i<items1.Count; i++)
+                {
+                    incorrect += (items1.Item(i).Attributes["correct"].Value != items2.Item(i).Attributes["correct"].Value)
+                        ? 1 : 0;
+                }
+                return (incorrect / 2) / exam.CountOfQuestion;
+
+            }
+            return 0.0f;
+        }
 
         [SoapHeader("Authentication", Required = true)
 ]
@@ -195,14 +370,9 @@ namespace WebServiceUniversus
         }
 
         [WebMethod]
-        public String getRoleNameByUserId(int id)
+        public Role getRoleById(int id)
         {
-            Role role = RoleDAO.getRoleByUserId(id);
-            if (role != null)
-            {
-                return role.Name;
-            }
-            return null;
+            return RoleDAO.getRoleByUserId(id);
         }
 
         [WebMethod]
