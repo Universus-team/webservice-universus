@@ -61,50 +61,53 @@ namespace WebServiceUniversus
         <br>int - number of delete students")]
         public int deleteStudentById(int Id)
         {
-            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                && (isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
                 return StudentDAO.deleteById(Id);
             }
             return -1;
         }
 
+
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>Delete all students</H2>
-        <br><b>Return:</b>
-        <br>int - number of delete students")]
-        public int deleteAllStudents()
+        [WebMethod]
+        public int addModeratorAccount(Account account)
         {
-            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-                && AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id)
+            if (identification(Authentication.Username, Authentication.Password)
+                  && isAdmin(Authentication.Username))
             {
-                return StudentDAO.deleteAll();
+                account.RoleId = 2;
+                return AccountDAO.add(account);
             }
             return -1;
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>Add new moderator account</H2>
-        <br><b>Return:</b>
-        <br>int - 1 if moderator added, o if moderator did not add, -1 if error")]
-        public int addModeratorAccount(string username, string password)
+        [WebMethod]
+        public int deleteModeratorAccountById(int id)
         {
-            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-                && AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id)
+            if (identification(Authentication.Username, Authentication.Password)) return -3;
+            if (isAdmin(Authentication.Username))
             {
-                return AccountDAO.add(username, password, RoleDAO.getByName("moderator").Id);
+                Account account = AccountDAO.getById(id);
+                if (isModerator(account.Username))
+                    return AccountDAO.deleteById(id);
+                else
+                    return -4;
+            } else
+            {
+                return -2;
             }
-            return -1;
+           
         }
 
-        [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description = @"<H2>Add new student</H2>
         <br><b>Return:</b>
         <br>int - 1 if student added, o if student did not add, -1 if error")]
-        public int addStudent(string name, string surname, string email, string phone_number, int group_id)
+        public int addStudent(Student student)
         {
-             return StudentDAO.add(new Student(0, name, surname, email, phone_number, group_id));
+            return StudentDAO.add(student);
         }
 
         [SoapHeader("Authentication", Required = true)]
@@ -115,11 +118,8 @@ namespace WebServiceUniversus
         <br> -1 if error")]
         public int addUniversity(University uni)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account != null &&
-                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                && (isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
 
                 return UniversityDAO.add(uni);
@@ -136,11 +136,8 @@ namespace WebServiceUniversus
         <br> -1 if error")]
         public int addDepartment(Department d)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account != null &&
-                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                && (isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
 
                 return DepartmentDAO.add(d);
@@ -156,12 +153,8 @@ namespace WebServiceUniversus
         <br> -1 if error")]
         public int addStudentGroup(StudentGroup s)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account != null &&
-                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
 
                 return StudentGroupDAO.add(s);
@@ -190,12 +183,8 @@ namespace WebServiceUniversus
         [WebMethod]
         public int addExamHistory(ExamHistory ex)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account != null &&
-                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
 
                 return ExamHistoryDAO.add(ex);
@@ -232,12 +221,8 @@ namespace WebServiceUniversus
         <br> -1 if error")]
         public int addExam(Exam e)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account != null &&
-                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
 
                 return ExamDAO.add(e);
@@ -249,14 +234,12 @@ namespace WebServiceUniversus
         [WebMethod]
         public int addStudentToGroup(int studentId, int groupId)
         {
-            if (AccountDAO.getMD5(Authentication.Password) == AccountDAO.getByUsername(Authentication.Username).PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
                 Student student = StudentDAO.getById(studentId);
-            student.GroupId = groupId;
-            return StudentDAO.update(studentId, student);
+                student.GroupId = groupId;
+                return StudentDAO.update(student);
             }
             return -1;
         }
@@ -265,9 +248,10 @@ namespace WebServiceUniversus
         [WebMethod]
         public bool sendMessage(int toUserId, string strMess)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if ((account != null) && (AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5))
+            
+            if (identification(Authentication.Username, Authentication.Password))
             {
+                Account account = AccountDAO.getByUsername(Authentication.Username);
                 MessageDAO.add(account.Id, toUserId, strMess);
                 return true;
             }
@@ -295,16 +279,16 @@ namespace WebServiceUniversus
         [WebMethod]
         public List<Exam> getAllExams()
         {
-            return Exa.getAll();
+            return ExamDAO.getAll();
         }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
         public List<string> getDialogs()
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if ((account != null) && (AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5))
+            if (identification(Authentication.Username, Authentication.Password))
             {
+                Account account = AccountDAO.getByUsername(Authentication.Username);
                 return MessageDAO.getDialogs(account.Id);
             }
             return null;
@@ -314,9 +298,10 @@ namespace WebServiceUniversus
         [WebMethod]
         public List<Message> getDialog(int userId)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if ((account != null) && (AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5))
+            
+            if (identification(Authentication.Username, Authentication.Password))
             {
+                Account account = AccountDAO.getByUsername(Authentication.Username);
                 return MessageDAO.getDialog(account.Id, userId);
             }
             return null;
@@ -326,8 +311,8 @@ namespace WebServiceUniversus
         [WebMethod]
         public float passExam(Exam exam)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if ((account != null) && (AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5))
+
+            if (identification(Authentication.Username, Authentication.Password))
             {
                 Exam originalExam = ExamDAO.getById(exam.Id);
                 XmlDocument xDoc1 = new XmlDocument();
@@ -351,22 +336,18 @@ namespace WebServiceUniversus
             return 0.0f;
         }
 
-        [SoapHeader("Authentication", Required = true)
-]
+        [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description = @"<H2>returt account id by username and password</H2>
         <br><b>Return:</b>
         <br>-1 if incorrect password 
         <br>-2 if incorrect username")]
         public int getId()
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account == null) return -2; //username not found
-            string passwordMd5 = AccountDAO.getMD5(Authentication.Password);
-            if ( passwordMd5 == account.PasswordMD5)
+            if ( identification(Authentication.Username, Authentication.Password))
             {
-                return account.Id;
+                return AccountDAO.getByUsername(Authentication.Username).Id;
             }
-            return -1;//incorrect password
+            return -1;
         }
 
         [WebMethod]
@@ -391,6 +372,91 @@ namespace WebServiceUniversus
             if (account == null) return null;
             return account.Username;
         }
+
+        [WebMethod]
+        public Subject getSubjectById(int id)
+        {
+            return SubjectDAO.getById(id);
+        }
+
+        [WebMethod]
+        public List<Subject> getAllSubject()
+        {
+            return SubjectDAO.getAll();
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int updateSubject(Subject subject)
+        {
+            if (identification(Authentication.Username, Authentication.Password)) return -2;
+            if (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username))
+            {
+                return SubjectDAO.update(subject);
+            }
+            else
+            {
+                return -3;
+            }
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addSubject(Subject subject)
+        {
+            if (identification(Authentication.Username, Authentication.Password)) return -2;
+            if (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username))
+            {
+                return SubjectDAO.add(subject);
+            } else
+            {
+                return -3;
+            }
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int deleteSubjectById(int id)
+        {
+            if (identification(Authentication.Username, Authentication.Password)) return -2;
+            if (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username))
+            {
+                return SubjectDAO.deleteById(id);
+            }
+            else
+            {
+                return -3;
+            }
+        }
+
+        private bool identification(string username, string password)
+        {
+            Account account = AccountDAO.getByUsername(Authentication.Username);
+            if (account == null) return false; //username not found
+            string passwordMd5 = AccountDAO.getMD5(Authentication.Password);
+            return passwordMd5 == account.PasswordMD5;
+        }
+
+        private bool isStudent(string username)
+        {
+            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("student").Id;
+        }
+
+        private bool isTeacher(string username)
+        {
+            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id;
+        }
+
+        private bool isModerator(string username)
+        {
+            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id;
+        }
+
+        private bool isAdmin(string username)
+        {
+            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id;
+        }
+
 
 
     }

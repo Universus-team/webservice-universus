@@ -17,8 +17,8 @@ namespace ClassLibrary1
         static DateTime testDate = new DateTime(1970, 01, 01);
         static bool testBool = true;
         static int testInt = 1;
-        static Student student = new Student(testId, testStr, testStr, testStr,
-             testStr, testInt);
+        static Account account = new Account(testStr, testStr, testStr, testStr, testStr, testInt, testStr, testStr);
+        static Student student = new Student(account, 1);
 
         [TestCase]
         public void getStudentById()
@@ -29,7 +29,7 @@ namespace ClassLibrary1
             Assert.AreEqual(test.Name, testStr);
             Assert.AreEqual(test.Surname, testStr);
             Assert.AreEqual(test.Email, testStr);
-            Assert.AreEqual(test.PhoneNumber, testStr);
+            Assert.AreEqual(test.Phone, testStr);
             Assert.AreEqual(test.GroupId, testInt);
         }
 
@@ -45,16 +45,6 @@ namespace ClassLibrary1
             Assert.AreEqual(test.ManagerID, testInt);
         }
 
-        [TestCase]
-        public void getSpecialityById()
-        {
-            Speciality test = SpecialityDAO.getById(testId);
-            Assert.NotNull(test);
-            Assert.AreEqual(test.Id, testId);
-            Assert.AreEqual(test.Name, testStr);
-            Assert.AreEqual(test.SpecialityCode, testStr);
-            Assert.AreEqual(test.Description, testStr);
-        }
 
         [TestCase]
         public void getRoleById()
@@ -71,9 +61,6 @@ namespace ClassLibrary1
             Account test = AccountDAO.getById(testId);
             Assert.NotNull(test);
             Assert.AreEqual(test.Id, testId);
-            Assert.AreEqual(test.Username, testStr);
-            Assert.AreEqual(test.PasswordMD5, testStr);
-            Assert.AreEqual(test.RoleId, testInt);
         }
 
         [TestCase]
@@ -117,5 +104,15 @@ namespace ClassLibrary1
             StudentDAO.deleteById(id);
             Assert.Null(StudentDAO.getById(id));
         }
+
+
+        [TestCase]
+        public void deleteAccountById()
+        {
+            int id = AccountDAO.add(account);
+            AccountDAO.deleteById(id);
+            Assert.Null(AccountDAO.getById(id));
+        }
+
     }
 }

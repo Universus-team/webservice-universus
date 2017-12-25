@@ -92,27 +92,39 @@ namespace DatabaseLib
     }
 
     [Serializable]
-    public class Teacher
+    public class Teacher : Account
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Surname { get; set; }
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
-
+        public Teacher(Account account, int departmentId)
+        {
+            Id = account.Id;
+            Username = account.Username;
+            PasswordMD5 = account.PasswordMD5;
+            Name = account.Name;
+            Surname = account.Surname;
+            Patronymic = account.Patronymic;
+            Phone = account.Phone;
+            Email = account.Email;
+            RoleId = account.RoleId;
+            DepartmentId = departmentId;
+        }
+        int DepartmentId { get; set; }
     }
 
     [Serializable]
-    public class Student
+    public class Student : Account
     {
 
-        public Student(int id, string name, string surname, string email, string phoneNumber, int groupId)
+        public Student(Account account, int groupId)
         {
-            Id = id;
-            Name = name;
-            Surname = surname;
-            Email = email;
-            PhoneNumber = phoneNumber;
+            Id = account.Id;
+            Username = account.Username;
+            PasswordMD5 = account.PasswordMD5;
+            Name = account.Name;
+            Surname = account.Surname;
+            Patronymic = account.Patronymic;
+            Phone = account.Phone;
+            Email = account.Email;
+            RoleId = account.RoleId;
             GroupId = groupId;
         }
 
@@ -120,12 +132,8 @@ namespace DatabaseLib
         {
         }
 
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Surname { get; set; }
-        public string Email { get; set; }
-        public string PhoneNumber { get; set; }
         public int GroupId { get; set; }
+
 
     }
 
@@ -143,10 +151,30 @@ namespace DatabaseLib
     [Serializable]
     public class Account
     {
+        public Account(string username, string passwordMD5, string name, string surname, string patronymic, int roleId, string email, string phone)
+        {
+            Username = username;
+            PasswordMD5 = passwordMD5;
+            Name = name;
+            Surname = surname;
+            Patronymic = patronymic;
+            RoleId = roleId;
+            Email = email;
+            Phone = phone;
+        }
+
+        public Account() { }
+
         public int Id { get; set; }
         public string Username { get; set; }
         public string PasswordMD5 { get; set; }
+        public string Name { get; set; }
+        public string Surname { get; set; }
+        public string Patronymic { get; set; }
         public int RoleId { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+
     }
 
     [Serializable]
@@ -184,6 +212,7 @@ namespace DatabaseLib
         public int CountOfQuestion { get; set; }
         public string Content { get; set; }
 
+
     }
 
     [Serializable]
@@ -195,7 +224,9 @@ namespace DatabaseLib
         public int StudentId { get; set; }
         public int StatusId { get; set; }
         public float Result { get; set; }
+        public float PassingScore { get; set; }
         public DateTime Deadline { get; set; }
+        public DateTime DateOfTest { get; set; }
 
     }
 
@@ -207,5 +238,32 @@ namespace DatabaseLib
         public string Name { get; set; }
     }
 
+    [Serializable]
+    public class Subject
+    {
 
+        public Subject()
+        {
+
+        }
+        public Subject(string name, int teacherId, DateTime createdDate)
+        {
+            Name = name;
+            TeacherId = teacherId;
+            CreatedDate = createdDate;
+        }
+
+        public Subject(int id, string name, int teacherId, DateTime createdDate)
+        {
+            Id = id;
+            Name = name;
+            TeacherId = teacherId;
+            CreatedDate = createdDate;
+        }
+
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public int TeacherId { get; set; }
+        public DateTime CreatedDate { get; set; }
+    }
 }

@@ -36,17 +36,17 @@ namespace DatabaseLib
 
     public class StudentDAO : DAO
     {
-        public static readonly ILog log = LogManager.GetLogger(typeof(StudentDAO));
 
-        static void Main()
-        {
-            XmlConfigurator.Configure();
-        }
 
         public static List<Student> getAll()
         {
             MySqlConnection conn = null;
-            string sqlQuery = "SELECT id, name, surname, email, phone_number, group_id from student";
+            string sqlQuery = @"SELECT group_id account_id 
+                                FROM student_to_group, role, account
+                                WHERE 
+                                student_to_group.account_id = account.id 
+                                AND account.role_id = role.id 
+                                AND role.name = 'student'";
             try
             {
                 conn = getConnection();
@@ -56,22 +56,17 @@ namespace DatabaseLib
                 MySqlDataReader reader = cmd.ExecuteReader();
                 List<Student> students = new List<Student>();
                 while (reader.Read())
-                {
-                    Student student = new Student();
-                    student.Id = reader.GetInt32(0);
-                    student.Name = reader.GetString(1);
-                    student.Surname = reader.GetString(2);
-                    student.Email = reader.GetString(3);
-                    student.PhoneNumber = reader.GetString(4);
+                {                 
+                    int group_id = reader.GetInt32(0);
+                    int account_id = reader.GetInt32(1);
+                    Student student = new Student(AccountDAO.getById(account_id), group_id);
                     students.Add(student);
                 }
-                log.Info("Success");
                 return students;
 
             }
             catch (MySqlException ex)
             {
-                log.Error(ex.ToString());
 
             }
             finally
@@ -84,26 +79,22 @@ namespace DatabaseLib
             return null;
         }
 
-        public static int update(int studentId, Student s)
+        public static int update(Student s)
         {
             if (s == null) return 0;
             MySqlConnection conn = null;
-            string sqlQuery = @"UPDATE student 
-                                SET name=@name, surname=@sname, email = @email, phone_number=@phone, group_id = @group
-                                WHERE id = @id;";
+            string sqlQuery = @"UPDATE student_to_group 
+                                SET group_id = @group
+                                WHERE account_id = @id;";
             try
             {
                 conn = getConnection();
                 conn.Open();
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
-                cmd.Parameters.AddWithValue("@id", studentId);
-                cmd.Parameters.AddWithValue("@name", s.Name);
-                cmd.Parameters.AddWithValue("@sname", s.Surname);
-                cmd.Parameters.AddWithValue("@email", s.Email);
-                cmd.Parameters.AddWithValue("@phone", s.PhoneNumber);
+                cmd.Parameters.AddWithValue("@id", s.Id);
                 cmd.Parameters.AddWithValue("@group", s.GroupId);
-                log.Info("Id = "+studentId);
+                AccountDAO.update((Account)s);
                 return cmd.ExecuteNonQuery();
             }
             catch (MySqlException ex)
@@ -123,35 +114,33 @@ namespace DatabaseLib
         public static Student getById(int id)
         {
             MySqlConnection conn = null;
-            string sqlQuery = "SELECT id, name, surname, email, phone_number, group_id FROM student WHERE id = @Id";
+            string sqlQuery = @"SELECT group_id account_id 
+                                FROM student_to_group, role, account
+                                WHERE 
+                                student_to_group.account_id = account.id 
+                                AND account.id = @id
+                                AND account.role_id = role.id 
+                                AND role.name = 'student'";
             try
             {
                 conn = getConnection();
                 conn.Open();
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
-                cmd.Parameters.AddWithValue("@Id", id);
+                cmd.Parameters.AddWithValue("@id", id);
                 MySqlDataReader reader = cmd.ExecuteReader();
-                Student student = new Student();
                 if (reader.Read())
                 {
-                    student.Id = reader.GetInt32(0);
-                    student.Name = reader.GetString(1);
-                    student.Surname = reader.GetString(2);
-                    student.Email = reader.GetString(3);
-                    student.PhoneNumber = reader.GetString(4);
-                    student.GroupId = reader.GetInt32(5);
-                } else
-                {
-                    return null;
+                    int group_id = reader.GetInt32(0);
+                    int account_id = reader.GetInt32(1);
+                    Student student = new Student(AccountDAO.getById(account_id), group_id);
+                    return student;
                 }
-                log.Info("id = "+student.Id);
-                return student;
+                
 
             }
             catch (MySqlException ex)
             {
-                log.Error(ex.ToString());
 
             }
             finally
@@ -167,7 +156,7 @@ namespace DatabaseLib
         public static int deleteById(int id)
         {
             MySqlConnection conn = null;
-            string sqlQuery = "DELETE FROM student WHERE id = @Id";
+            string sqlQuery = @"DELETE FROM student_to_group WHERE account_id = @Id";
             try
             {
                 conn = getConnection();
@@ -175,41 +164,12 @@ namespace DatabaseLib
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
                 cmd.Parameters.AddWithValue("@Id", id);
-                log.Info("id = " + id);
+                AccountDAO.deleteById(id);
                 return cmd.ExecuteNonQuery();
 
             }
             catch (MySqlException ex)
             {
-                log.Error(ex.ToString());
-
-            }
-            finally
-            {
-                if (conn != null)
-                {
-                    conn.Close();
-                }
-            }
-            return -1;
-        }
-
-        public static int deleteAll()
-        {
-            MySqlConnection conn = null;
-            try
-            {
-                conn = getConnection();
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand("delete_all_students", conn);
-                cmd.CommandType = CommandType.StoredProcedure;
-                log.Info("Success");
-                return cmd.ExecuteNonQuery();
-
-            }
-            catch (MySqlException ex)
-            {
-                Console.WriteLine("Error: {0}", ex.ToString());
 
             }
             finally
@@ -226,28 +186,23 @@ namespace DatabaseLib
         {
             if (st == null) return 0;
             MySqlConnection conn = null;
-            string sqlQuery = @"INSERT INTO student 
-                (name, surname, email, phone_number, group_id)
-                VALUES(@name, @sname, @email, @phone, @group);";
+            string sqlQuery = @"INSERT INTO student_to_group 
+                (group_id, account_id)
+                VALUES( @group, @id);";
             try
             {
                 conn = getConnection();
                 conn.Open();
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
-                cmd.Parameters.AddWithValue("@name", st.Name);
-                cmd.Parameters.AddWithValue("@sname", st.Surname);
-                cmd.Parameters.AddWithValue("@email", st.Email);
-                cmd.Parameters.AddWithValue("@phone", st.PhoneNumber);
+                int id = AccountDAO.add((Account)st);
                 cmd.Parameters.AddWithValue("@group", st.GroupId);
+                cmd.Parameters.AddWithValue("@id", id);
                 cmd.ExecuteNonQuery();
-                int id = (int)cmd.LastInsertedId;
-                log.Error("id = " + id);
-                return id;
+                return (int)cmd.LastInsertedId;
             }
             catch (MySqlException ex)
             {
-                log.Error(ex.ToString());
             }
             finally
             {
@@ -266,7 +221,10 @@ namespace DatabaseLib
         public static Account getById(int id)
         {
             MySqlConnection conn = null;
-            string sqlQuery = "SELECT id, username, password_md5, role_id FROM account WHERE id = @Id";
+            string sqlQuery = @"SELECT
+                                id, username, password_md5, role_id, name, surname, patronymic, email, phone 
+                                FROM account
+                                WHERE id = @Id and id <> 0";
             try
             {
                 conn = getConnection();
@@ -282,9 +240,62 @@ namespace DatabaseLib
                     account.Username = reader.GetString(1);
                     account.PasswordMD5 = reader.GetString(2);
                     account.RoleId = reader.GetInt32(3);
+                    account.Name = reader.GetString(4);
+                    account.Surname = reader.GetString(5);
+                    account.Patronymic = reader.GetString(6);
+                    account.Email = reader.GetString(7);
+                    account.Email = reader.GetString(8);
 
                 }
                 return account;
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static List<Account> getAll()
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT
+                                id, username, password_md5, role_id, name, surname, patronymic, email, phone 
+                                FROM account
+                                WHERE id <> 0";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                MySqlDataReader reader = cmd.ExecuteReader();
+                List<Account> accounts = new List<Account>();
+                while (reader.Read())
+                {
+                    Account account = new Account();
+                    account.Id = reader.GetInt32(0);
+                    account.Username = reader.GetString(1);
+                    account.PasswordMD5 = reader.GetString(2);
+                    account.RoleId = reader.GetInt32(3);
+                    account.Name = reader.GetString(4);
+                    account.Surname = reader.GetString(5);
+                    account.Patronymic = reader.GetString(6);
+                    account.Email = reader.GetString(7);
+                    account.Email = reader.GetString(8);
+                    accounts.Add(account);
+
+                }
+                return accounts;
 
             }
             catch (MySqlException ex)
@@ -305,7 +316,10 @@ namespace DatabaseLib
         public static Account getByUsername(string username)
         {
             MySqlConnection conn = null;
-            string sqlQuery = "SELECT id, username, password_md5, role_id FROM account WHERE username = @uname";
+            string sqlQuery = @"SELECT
+                                id, username, password_md5, role_id, name, surname, patronymic, email, phone 
+                                FROM account
+                                WHERE username = @uname and id <> 0";
             try
             {
                 conn = getConnection();
@@ -321,6 +335,11 @@ namespace DatabaseLib
                     account.Username = reader.GetString(1);
                     account.PasswordMD5 = reader.GetString(2);
                     account.RoleId = reader.GetInt32(3);
+                    account.Name = reader.GetString(4);
+                    account.Surname = reader.GetString(5);
+                    account.Patronymic = reader.GetString(6);
+                    account.Email = reader.GetString(7);
+                    account.Email = reader.GetString(8);
 
                 }
                 return account;
@@ -341,26 +360,109 @@ namespace DatabaseLib
             return null;
         }
 
-        public static int add(string username, string password, int role_id)
+        public static int add(Account account)
         {
-            if (username == null || password == null) return 0;
+            if (account == null) return 0;
             MySqlConnection conn = null;
-            string sqlQuery = @"INSERT INTO account (username, password_md5, role_id)
-                VALUES(@uname, @pwd, @role)";
+            string sqlQuery = @"INSERT INTO account
+                                (username, password_md5, role_id, name, surname, patronymic, email, phone)
+                                VALUES(@uname, @pwd, @role, @name, @sname, @patr, @email, @phone)";
             try
             {
                 conn = getConnection();
                 conn.Open();
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
-                cmd.Parameters.AddWithValue("@uname", username);
-                cmd.Parameters.AddWithValue("@pwd", getMD5(password));
-                cmd.Parameters.AddWithValue("@role", role_id);
+                cmd.Parameters.AddWithValue("@uname", account.Username);
+                cmd.Parameters.AddWithValue("@pwd", account.PasswordMD5);
+                cmd.Parameters.AddWithValue("@role", account.RoleId);
+                cmd.Parameters.AddWithValue("@name", account.Name);
+                cmd.Parameters.AddWithValue("@sname", account.Surname);
+                cmd.Parameters.AddWithValue("@patr", account.Patronymic);
+                cmd.Parameters.AddWithValue("@email", account.Email);
+                cmd.Parameters.AddWithValue("@phone", account.Phone);
+                cmd.ExecuteNonQuery();
+                int id = (int)cmd.LastInsertedId;
+                return id;
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
+        }
+
+        public static int update(Account account)
+        {
+            if (account == null) return 0;
+            MySqlConnection conn = null;
+            string sqlQuery = @"UPDATE account 
+                                SET 
+                                username=@uname,
+                                password_md5 = @pwd.
+                                role_id = @role.
+                                name=@name,
+                                surname=@sname,
+                                patronymic = @patr,
+                                email = @email,
+                                phone=@phone, 
+                                WHERE id = @id;";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", account.Id);
+                cmd.Parameters.AddWithValue("@uname", account.Username);
+                cmd.Parameters.AddWithValue("@pwd", account.PasswordMD5);
+                cmd.Parameters.AddWithValue("@role", account.RoleId);
+                cmd.Parameters.AddWithValue("@name", account.Name);
+                cmd.Parameters.AddWithValue("@sname", account.Surname);
+                cmd.Parameters.AddWithValue("@patr", account.Patronymic);
+                cmd.Parameters.AddWithValue("@email", account.Email);
+                cmd.Parameters.AddWithValue("@phone", account.Phone);
                 return cmd.ExecuteNonQuery();
             }
             catch (MySqlException ex)
             {
                 Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
+        }
+
+        public static int deleteById(int id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = "DELETE FROM account WHERE id = @Id";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@Id", id);
+                //AccountDAO.de
+                return cmd.ExecuteNonQuery();
+
+            }
+            catch (MySqlException ex)
+            {
+
             }
             finally
             {
@@ -1468,24 +1570,26 @@ namespace DatabaseLib
 
     public class ExamHistoryDAO : DAO
     {
-        public static int add(ExamHistory e)
+        public static int add(ExamHistory history)
         {
-            if (e == null) return 0;
+            if (history == null) return 0;
             MySqlConnection conn = null;
-            string sqlQuery = @"INSERT INTO exam_history (exam_id, teacher_id, deadline, result, status_id, student_id)
-                VALUES(@exam_id, @teacher_id, @deadline, @result, @status_id, @student_id)";
+            string sqlQuery = @"INSERT INTO exam_history (exam_id, teacher_id, deadline, result, status_id, student_id, passing_score, date_of_test)
+                VALUES(@exam, @teacher, @deadline, @result, @status, @student, @pass, @dateOfTest)";
             try
             {
                 conn = getConnection();
                 conn.Open();
                 MySqlCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sqlQuery;
-                cmd.Parameters.AddWithValue("@exam_id", e.ExamId);
-                cmd.Parameters.AddWithValue("@teacher_id", e.TeacherId);
-                cmd.Parameters.AddWithValue("@deadline", e.Deadline);
-                cmd.Parameters.AddWithValue("@result", e.Result);
-                cmd.Parameters.AddWithValue("@status_id", e.StatusId);
-                cmd.Parameters.AddWithValue("@student_id", e.StudentId);
+                cmd.Parameters.AddWithValue("@exam", history.ExamId);
+                cmd.Parameters.AddWithValue("@teacher", history.TeacherId);
+                cmd.Parameters.AddWithValue("@student", history.StudentId);
+                cmd.Parameters.AddWithValue("@status", history.StatusId);
+                cmd.Parameters.AddWithValue("@pass", history.PassingScore);
+                cmd.Parameters.AddWithValue("@result", history.Result);
+                cmd.Parameters.AddWithValue("@dateOfTest", history.DateOfTest);
+                cmd.Parameters.AddWithValue("@deadline", history.Deadline);
                 return cmd.ExecuteNonQuery();
             }
             catch (MySqlException ex)
@@ -1506,7 +1610,7 @@ namespace DatabaseLib
         public static List<ExamHistory> getAllByStudentId(int id)
         {
             MySqlConnection conn = null;
-            string sqlQuery = @"SELECT id, exam_id, teacher_id, deadline, result, status_id, student_id
+            string sqlQuery = @"SELECT id, exam_id, teacher_id, deadline, result, status_id, student_id, passing_score, date_of_test
                                 FROM exam_history WHERE student_id = @Id;";
             try
             {
@@ -1527,6 +1631,9 @@ namespace DatabaseLib
                     examHistory.Result = reader.GetFloat(4);
                     examHistory.StatusId = reader.GetInt32(5);
                     examHistory.StudentId = reader.GetInt32(6);
+                    examHistory.PassingScore = reader.GetFloat(7);
+                    examHistory.DateOfTest = reader.GetDateTime(8);
+
                     history.Add(examHistory);
                 }
                 return history;
@@ -1545,6 +1652,96 @@ namespace DatabaseLib
                 }
             }
             return null;
+        }
+
+        public static ExamHistory getById(int id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT id, exam_id, teacher_id, deadline, result, status_id, student_id, passing_score, date_of_test
+                                FROM exam_history WHERE student_id = @Id;";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@Id", id);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    ExamHistory examHistory = new ExamHistory();
+                    examHistory.Id = reader.GetInt32(0);
+                    examHistory.ExamId = reader.GetInt32(1);
+                    examHistory.TeacherId = reader.GetInt32(2);
+                    examHistory.Deadline = reader.GetDateTime(3);
+                    examHistory.Result = reader.GetFloat(4);
+                    examHistory.StatusId = reader.GetInt32(5);
+                    examHistory.StudentId = reader.GetInt32(6);
+                    examHistory.PassingScore = reader.GetFloat(7);
+                    examHistory.DateOfTest = reader.GetDateTime(8);
+                    return examHistory;
+                }
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static int update(ExamHistory history)
+        {
+            if (history == null) return 0;
+            MySqlConnection conn = null;
+            string sqlQuery = @"UPDATE exam_history 
+                                SET 
+                                exam_id=@exam,
+                                teacher_id = @teacher,
+                                student_id = @student,
+                                status_id = @status,   
+                                result = @result,
+                                passing_score = @pass,
+                                deadline = @deadline,
+                                date_of_test = @dateOfTest 
+                                WHERE id = @id;";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", history.Id);
+                cmd.Parameters.AddWithValue("@exam", history.ExamId);
+                cmd.Parameters.AddWithValue("@teacher", history.TeacherId);
+                cmd.Parameters.AddWithValue("@student", history.StudentId);
+                cmd.Parameters.AddWithValue("@status", history.StatusId);
+                cmd.Parameters.AddWithValue("@pass", history.PassingScore);
+                cmd.Parameters.AddWithValue("@result", history.Result);
+                cmd.Parameters.AddWithValue("@dateOfTest", history.DateOfTest);
+                cmd.Parameters.AddWithValue("@deadline", history.Deadline);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
         }
 
     }
@@ -1587,5 +1784,181 @@ namespace DatabaseLib
             return null;
         }
 
+    }
+
+    public class SubjectDAO : DAO
+    {
+        public static int add(Subject s)
+        {
+            if (s == null) return 0;
+            MySqlConnection conn = null;
+            string sqlQuery = @"INSERT INTO subject (name, teacher_id, created_date)
+                VALUES(@name, @teacher_id, @created_date)";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@name", s.Name);
+                cmd.Parameters.AddWithValue("@teacher_id", s.TeacherId);
+                cmd.Parameters.AddWithValue("@created_date", s.CreatedDate);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
+        }
+
+        public static Subject getById(int id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT id, name, teacher_id, created_date
+                                FROM subject WHERE id = @Id;";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@Id", id);
+                MySqlDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    return new Subject(
+                        reader.GetInt32(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetDateTime(3));
+                }
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static List<Subject> getAll()
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"SELECT id, name, teacher_id, created_date
+                                FROM subject";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                MySqlDataReader reader = cmd.ExecuteReader();
+                List<Subject> subjects = new List<Subject>();
+                while (reader.Read())
+                {
+                    subjects.Add( new Subject(
+                        reader.GetInt32(0),
+                        reader.GetString(1),
+                        reader.GetInt32(2),
+                        reader.GetDateTime(3)));
+                }
+                return subjects;
+
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return null;
+        }
+
+        public static int update(Subject subject)
+        {
+            if (subject == null) return 0;
+            MySqlConnection conn = null;
+            string sqlQuery = @"UPDATE subject 
+                                SET 
+                                name=@name,
+                                created_date = @date,
+                                teacher_id = @teacher
+                                WHERE id = @id;";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", subject.Id);
+                cmd.Parameters.AddWithValue("@name", subject.Name);
+                cmd.Parameters.AddWithValue("@teacher", subject.TeacherId);
+                cmd.Parameters.AddWithValue("@date", subject.CreatedDate);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
+        }
+
+        public static int deleteById(int id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"DELETE FROM subject 
+                                WHERE id = @id";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
+        }
     }
 }
