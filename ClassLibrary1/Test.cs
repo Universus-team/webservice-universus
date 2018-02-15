@@ -114,5 +114,13 @@ namespace ClassLibrary1
             Assert.Null(AccountDAO.getById(id));
         }
 
+        [TestCase]
+        public void deleteRoleById()
+        {
+            int id = RoleDAO.add(testStr);
+            RoleDAO.deleteById(id);
+            Assert.Null(RoleDAO.getById(id));
+        }
+
     }
 }

@@ -184,6 +184,16 @@ namespace DatabaseLib
         public readonly static string MODERATOR = "moderator";
         public readonly static string TEACHER = "teacher";
         public readonly static string STUDENT = "student";
+
+        public Role(string name)
+        {
+            Name = name;
+        }
+
+        public Role()
+        {
+        }
+
         public int Id { get; set; }
         public string Name { get; set; }
     }
@@ -212,6 +222,10 @@ namespace DatabaseLib
         public int CountOfQuestion { get; set; }
         public string Content { get; set; }
 
+        public void clearAnswer()
+        {
+            //TODO this
+        }
 
     }
 

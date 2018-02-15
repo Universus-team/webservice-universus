@@ -27,38 +27,26 @@ namespace WebServiceUniversus
     {
         public AuthHeader Authentication;
 
-        [WebMethod(Description = @"<H2>Get all students from database</H2>
-           <br> <b>Return:</b>
-           <br>List of students")]
+        [WebMethod]
         public List<Student> getAllStudents()
         {
             return StudentDAO.getAll();
         }
 
-        [WebMethod(Description = @"<H2>Get all departments by university id</H2>
-           <br> <b>Return:</b>
-           <br>List of students")]
+        [WebMethod]
         public List<Department> getAllDepartmentsByUniversityId(int id)
         {
             return DepartmentDAO.getAllByUniversityId(id);
         }
 
-        [WebMethod(Description = @"<H2>Get a student by Id</H2>
-        <br> <b>Parameters:</b>
-        <br> int Id - Id of Student
-        <br> <b>Return:</b>
-        <br>Student")]
+        [WebMethod]
         public Student getStudentById(int Id)
         {
             return StudentDAO.getById(Id);
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>Delete a student by Id</H2>
-        <br> <b>Parameters:</b>
-        <br> int Id - Id of Student
-        <br> <b>Return:</b>
-        <br>int - number of delete students")]
+        [WebMethod]
         public int deleteStudentById(int Id)
         {
             if (identification(Authentication.Username, Authentication.Password)
@@ -102,20 +90,14 @@ namespace WebServiceUniversus
            
         }
 
-        [WebMethod(Description = @"<H2>Add new student</H2>
-        <br><b>Return:</b>
-        <br>int - 1 if student added, o if student did not add, -1 if error")]
+        [WebMethod]
         public int addStudent(Student student)
         {
             return StudentDAO.add(student);
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>Add new university</H2>
-        <br><b>Return:</b>
-        <br>1 if university added,
-        <br> o if university did not add,
-        <br> -1 if error")]
+        [WebMethod]
         public int addUniversity(University uni)
         {
             if (identification(Authentication.Username, Authentication.Password)
@@ -129,11 +111,7 @@ namespace WebServiceUniversus
 
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>Add new university departmaent</H2>
-        <br><b>Return:</b>
-        <br>1 if  university departmaent added,
-        <br> o if  university departmaent did not add,
-        <br> -1 if error")]
+        [WebMethod]
         public int addDepartment(Department d)
         {
             if (identification(Authentication.Username, Authentication.Password)
@@ -146,11 +124,7 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>Add new student_group</H2>
-        <br><b>Return:</b>
-        <br>1 if  student_group departmaent added,
-        <br> o if  student_group departmaent did not add,
-        <br> -1 if error")]
+        [WebMethod]
         public int addStudentGroup(StudentGroup s)
         {
             if (identification(Authentication.Username, Authentication.Password)
@@ -167,11 +141,8 @@ namespace WebServiceUniversus
         public List<StudentGroup> getAllStudenyGroupByManagerId(int id)
         {
             Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account != null &&
-                AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5
-                && (AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id
-                || AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id))
+            if (identification(Authentication.Username, Authentication.Password)
+                            && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
             {
 
                 return StudentGroupDAO.getAllByManagerId(id);
@@ -198,7 +169,7 @@ namespace WebServiceUniversus
         public List<ExamHistory> getAllExamHistoryByStudentId(int id)
         {
             Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (account != null && AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5)
+            if (identification(Authentication.Username, Authentication.Password))
             {
 
                 return ExamHistoryDAO.getAllByStudentId(account.Id);
@@ -258,17 +229,6 @@ namespace WebServiceUniversus
             return false;
         }
 
-        [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
-        public bool checkNewMessage(int fromUser)
-        {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if ((account != null) && (AccountDAO.getMD5(Authentication.Password) == account.PasswordMD5))
-            { 
-                return MessageDAO.checkNewMessage(account.Id, fromUser);
-            }
-            return false;
-        }
 
         [WebMethod]
         public List<University> getAllUniversities()
@@ -280,6 +240,14 @@ namespace WebServiceUniversus
         public List<Exam> getAllExams()
         {
             return ExamDAO.getAll();
+        }
+
+        [WebMethod]
+        public Exam getExamById(int id)
+        {
+            Exam exam = ExamDAO.getById(id);
+            exam.clearAnswer();
+            return exam;
         }
 
         [SoapHeader("Authentication", Required = true)]
@@ -337,17 +305,14 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>returt account id by username and password</H2>
-        <br><b>Return:</b>
-        <br>-1 if incorrect password 
-        <br>-2 if incorrect username")]
+        [WebMethod]
         public int getId()
         {
             if ( identification(Authentication.Username, Authentication.Password))
             {
                 return AccountDAO.getByUsername(Authentication.Username).Id;
             }
-            return -1;
+            return -2;
         }
 
         [WebMethod]

@@ -807,6 +807,34 @@ namespace DatabaseLib
             }
             return -1;
         }
+
+        public static int deleteById(int id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"DELETE FROM message 
+                                WHERE id = @id";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
+        }
     }
 
     public class RoleDAO : DAO
@@ -948,6 +976,34 @@ namespace DatabaseLib
                 }
             }
             return null;
+        }
+
+        public static int deleteById(int id)
+        {
+            MySqlConnection conn = null;
+            string sqlQuery = @"DELETE FROM role 
+                                WHERE id = @id";
+            try
+            {
+                conn = getConnection();
+                conn.Open();
+                MySqlCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sqlQuery;
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (MySqlException ex)
+            {
+                Console.WriteLine("Error: {0}", ex.ToString());
+            }
+            finally
+            {
+                if (conn != null)
+                {
+                    conn.Close();
+                }
+            }
+            return -1;
         }
     }
 
