@@ -46,7 +46,7 @@ namespace WebServiceUniversus
     	// [SoapHeader("Authentication", Required = true)]
     	// потом в самом методе достать данные из объекта Authentication
 
-    	
+
         public AuthHeader Authentication;
 
         [WebMethod]
@@ -112,11 +112,15 @@ namespace WebServiceUniversus
            
         }
 
+
+
         [WebMethod]
         public int addStudent(Student student)
         {
             return StudentDAO.add(student);
         }
+
+
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
@@ -158,6 +162,8 @@ namespace WebServiceUniversus
             return -1;
         }
 
+
+
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
         public List<StudentGroup> getAllStudenyGroupByManagerId(int id)
@@ -171,6 +177,8 @@ namespace WebServiceUniversus
             }
             return null;
         }
+
+
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
@@ -299,30 +307,35 @@ namespace WebServiceUniversus
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public float passExam(Exam exam)
+        public float checkExam(Exam exam)
         {
 
-            if (identification(Authentication.Username, Authentication.Password))
-            {
-                Exam originalExam = ExamDAO.getById(exam.Id);
-                XmlDocument xDoc1 = new XmlDocument();
-                xDoc1.LoadXml(exam.Content);
-                XmlElement xRoot = xDoc1.DocumentElement;
-                XmlNodeList items1 = xRoot.SelectNodes("//item");
 
-                XmlDocument xDoc2 = new XmlDocument();
-                xDoc1.LoadXml(originalExam.Content);
-                XmlElement xRoot2 = xDoc2.DocumentElement;
-                XmlNodeList items2 = xRoot2.SelectNodes("//item");
-                int incorrect = 0;
-                for (int i=0; i<items1.Count; i++)
-                {
-                    incorrect += (items1.Item(i).Attributes["correct"].Value != items2.Item(i).Attributes["correct"].Value)
-                        ? 1 : 0;
-                }
-                return (incorrect / 2) / exam.CountOfQuestion;
+        	//!!!TODO реализовать оценку тестов
+        	// первональный тест храниться в БД и достаётся оттуда с помощью метода
+        	// ExamDAO.getById(exam.Id)
+        	// содержимое теста хранится в XML формате (пример скину)
+        	// достать содержимое XML можно из св-ства exam.Content
+        	// необходимо распарсить данные из XML 
+        	// начало примерно такое 
+        	//  Exam originalExam = ExamDAO.getById(exam.Id);
+            // XmlDocument xDoc1 = new XmlDocument();
+            // xDoc1.LoadXml(exam.Content);
+            // XmlElement xRoot = xDoc1.DocumentElement;
+            // дальше см. доки https://metanit.com/sharp/tutorial/16.2.php
+            // на выходе должно быть процент правльных ответов представленные от 0 до 1.0
+            // т.е. 1 -- 100% правильных ответов
 
-            }
+            Exam originalExam = ExamDAO.getById(exam.Id);
+
+            XmlDocument xDoc1 = new XmlDocument();
+            xDoc1.LoadXml(exam.Content);
+            XmlElement xRoot = xDoc1.DocumentElement;
+
+            XmlDocument xDoc2 = new XmlDocument();
+            xDoc2.LoadXml(exam.Content);
+            XmlElement xRoot1 = xDoc2.DocumentElement;
+
             return 0.0f;
         }
 
@@ -416,6 +429,14 @@ namespace WebServiceUniversus
             }
         }
 
+        [WebMethod]
+        [WebMethod(Description =
+        @"Метод для проверки соединения с веб-сервисом <br>
+        возвращает полученную в параметре строку + test_123")]
+        public string test(string test) {
+        	return test + " test_123";
+        }
+
         private bool identification(string username, string password)
         {
             Account account = AccountDAO.getByUsername(Authentication.Username);
@@ -443,6 +464,7 @@ namespace WebServiceUniversus
         {
             return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id;
         }
+
 
 
 
