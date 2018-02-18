@@ -9,22 +9,44 @@ using System.Xml;
 
 namespace WebServiceUniversus
 {
+
+	// Класс для хранения аутентификационных данных
+	// 
     public class AuthHeader : SoapHeader
     {
         public string Username;
         public string Password;
     }
+
+
     /// <summary>
     /// Сводное описание для WebService1
     /// </summary>
-    [WebService(Namespace = "http://tempuri.org/")]
+    [WebService(Namespace = "http://universus-webservice.ru/")]
     [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
     [System.ComponentModel.ToolboxItem(false)]
 
     // Чтобы разрешить вызывать веб-службу из скрипта с помощью ASP.NET AJAX, раскомментируйте следующую строку. 
     [System.Web.Script.Services.ScriptService]
+
     public class WebService1 : System.Web.Services.WebService
     {
+    	// ---КАК ПРОХОДИТ ИДЕНТИФИКАЦИЯ и АУТЕНТИФИКАЦИЯ---
+    	// bool identification(username, password) -- проверяет, есть пользователь username в системе
+    	// если нет вернёт false, иначе проверит password, если password для username верен вернёт true
+
+    	// ---АВТОРИЗАЦИЯ---
+    	// проходит спомощью методов bool isStudent(username), bool isTeacher(username), bool isModerator(username),
+    	// bool isAdmin(username) которые вернут true если username принадлежит к той или иной группе пользователей
+    	// ВНИМАНИЕ перед авторизацией обязательно необходимо провести аутентификацию
+
+    	// ---хранение USERNAME & PASSWORD---
+    	// username и password хранятся в SOAP HEADER
+    	// чтобы использовать эту возможность перед методом веб-сервиса необходимо добавить строчку 
+    	// [SoapHeader("Authentication", Required = true)]
+    	// потом в самом методе достать данные из объекта Authentication
+
+    	
         public AuthHeader Authentication;
 
         [WebMethod]
