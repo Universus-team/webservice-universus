@@ -14,11 +14,13 @@ namespace DatabaseLib
     public abstract class DAO
     {
 
-        protected static string connectionString = "server=127.0.0.1;" +
+     /*   
+      *   Уже ненужно?
+      *   protected static string connectionString = "server=127.0.0.1;" +
             "uid=root;" +
             "pwd=3616;" +
             "database=universus;";
-
+*/
         public DAO()
         {
 
