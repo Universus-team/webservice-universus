@@ -50,7 +50,15 @@ namespace WebServiceUniversus
         public AuthHeader Authentication;
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Список всех тестов авторы которых, состоят в отделе по идентификатору, указанному в параметрах. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если состоит в отделе по указанному идентификатору) <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public List<Exam> getAllExamsByDepartmentId(int id)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -69,31 +77,57 @@ namespace WebServiceUniversus
 
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Принятие теста. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + <br>
+        Преподаватель: - <br>
+        Модератор: - <br>
+        Админ: - <br>
+        Возврат: процент правильных ответов в формате от 0 до 1 (100%) <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : данные истории тестирования были изменены <br>
+        -4 : крайнее время выполнения теста истекло <br>
+        -5 : тест уже был пройден <br>")]
         public float takeExam(ExamHistory eh)
         {
-            ExamHistory eh2 = ExamHistoryDAO.getById(eh.Id);
-            if (eh2.StatusId != 1) return -5; 
-            if (eh2.StudentId != eh.StudentId) return -3;
-            if (eh2.TeacherId != eh.TeacherId) return -3;
-            if (eh2.ExamId != eh.ExamId) return -3;
-            if (eh2.PassingScore != eh.PassingScore) return -3;
+            if (identification(Authentication.Email, Authentication.Password) && isStudent(Authentication.Email) )
+            {
+                ExamHistory eh2 = ExamHistoryDAO.getById(eh.Id);
+                if (eh2.StatusId != 1) return -5;
+                if (eh2.StudentId != eh.StudentId) return -3;
+                if (eh2.TeacherId != eh.TeacherId) return -3;
+                if (eh2.ExamId != eh.ExamId) return -3;
+                if (eh2.PassingScore != eh.PassingScore) return -3;
 
-            if (eh2.Deadline.CompareTo(DateTime.UtcNow) <= 0) return -4;
+                if (eh2.Deadline.CompareTo(DateTime.UtcNow) <= 0) return -4;
 
 
-            eh.DateOfTest = DateTime.UtcNow;
-            eh.Result = eh2.Exam.compare(eh.Exam);
-            eh.StatusId = (eh.Result >= eh.PassingScore) ? 3 : 2;
+                eh.DateOfTest = DateTime.UtcNow;
+                eh.Result = eh2.Exam.compare(eh.Exam);
+                eh.StatusId = (eh.Result >= eh.PassingScore) ? 3 : 2;
 
-            if (ExamHistoryDAO.update(eh) == -1) return -1;
+                if (ExamHistoryDAO.update(eh) == -1) return -1;
 
-            return eh.Result;
-            return eh2.Exam.compare(eh.Exam);
+                return eh.Result;
+            }
+            return -2;
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение объекта теста по его идентификатору. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если входит в тот же отдел университета, что и автор теста)<br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public Exam getExamById(int id)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -113,7 +147,18 @@ namespace WebServiceUniversus
 
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавление новой истории тестирования (назначение теста студенту). <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int addExamHistory(ExamHistory ex)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -128,16 +173,34 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение объекта истории тестирования. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + (Если ExamHistory.StudentId == идентификатору студента)<br>
+        Преподаватель: + (Если ExamHistory.TeacherId == идентификатору преподавателя)<br>
+        Модератор: - <br>
+        Админ: - <br>")]
         public ExamHistory getExamHistoryById(int id)
         {
-            if (identification(Authentication.Email, Authentication.Password) && isStudent(Authentication.Email))
+            if (identification(Authentication.Email, Authentication.Password))
             {
 
                 Account acc = AccountDAO.getByEmail(Authentication.Email);
                 ExamHistory ex = ExamHistoryDAO.getById(id);
-                ex.Exam.clearAnswer();
-                if (ex.StudentId != acc.Id) return null;
+                if (isStudent(Authentication.Email))
+                {
+                    ex.Exam.clearAnswer();
+                    if (ex.StudentId != acc.Id) return null;
+                } else if (isTeacher(Authentication.Email))
+                {
+                    if (ex.TeacherId != acc.Id) return null;
+                } else
+                {
+                    return null;
+                }
+
                 return ex;
 
 
@@ -147,7 +210,15 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка истории тестирования по идентификатору студента. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + (если входной идентификатор равен идентификатору аккаунта)<br>
+        Преподаватель: - <br>
+        Модератор: - <br>
+        Админ: - <br>")]
         public List<ExamHistory> getAllExamHistoryByStudentId(int id)
         {
             if (identification(Authentication.Email, Authentication.Password))
@@ -164,7 +235,15 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка истории тестирования по идентификатору теста и назначавшего преподавателя. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если назначал тестирование) <br>
+        Модератор: - <br>
+        Админ: - <br>")]
         public List<ExamHistory> getAllExamHistoryByTeacherId(int accountId, int examId)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -181,7 +260,15 @@ namespace WebServiceUniversus
             return null;
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение статуса истории тестирования по идентификатору статуса. <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public ExamStatus getExamStatusById(int id)
         {
             return ExamStatusDAO.getById(id);
@@ -189,7 +276,19 @@ namespace WebServiceUniversus
 
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавление нового теста. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 если всё прошло удачно <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int addExam(Exam e)
         {
             if (identification(Authentication.Email, Authentication.Password)
