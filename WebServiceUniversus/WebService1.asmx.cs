@@ -14,7 +14,7 @@ namespace WebServiceUniversus
 	// 
     public class AuthHeader : SoapHeader
     {
-        public string Username;
+        public string Email;
         public string Password;
     }
 
@@ -49,160 +49,134 @@ namespace WebServiceUniversus
 
         public AuthHeader Authentication;
 
-        [WebMethod]
-        public List<Student> getAllStudents()
-        {
-            return StudentDAO.getAll();
-        }
-
-        [WebMethod]
-        public List<Department> getAllDepartmentsByUniversityId(int id)
-        {
-            return DepartmentDAO.getAllByUniversityId(id);
-        }
-
-        [WebMethod]
-        public Student getStudentById(int Id)
-        {
-            return StudentDAO.getById(Id);
-        }
-
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public int deleteStudentById(int Id)
+        public List<Exam> getAllExamsByDepartmentId(int id)
         {
-            if (identification(Authentication.Username, Authentication.Password)
-                && (isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
             {
-                return StudentDAO.deleteById(Id);
+                if (isTeacher(Authentication.Email))
+                {
+                    Account account =AccountDAO.getByEmail(Authentication.Email);
+                    if (account.DepartmentId != id) return null;
+                }
+                return ExamDAO.getAllByDepartmentIdLite(id);
             }
-            return -1;
+            return null;
+            
         }
 
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public int addModeratorAccount(Account account)
+        public float takeExam(ExamHistory eh)
         {
-            if (identification(Authentication.Username, Authentication.Password)
-                  && isAdmin(Authentication.Username))
-            {
-                account.RoleId = 2;
-                return AccountDAO.add(account);
-            }
-            return -1;
+            ExamHistory eh2 = ExamHistoryDAO.getById(eh.Id);
+            if (eh2.StatusId != 1) return -5; 
+            if (eh2.StudentId != eh.StudentId) return -3;
+            if (eh2.TeacherId != eh.TeacherId) return -3;
+            if (eh2.ExamId != eh.ExamId) return -3;
+            if (eh2.PassingScore != eh.PassingScore) return -3;
+
+            if (eh2.Deadline.CompareTo(DateTime.UtcNow) <= 0) return -4;
+
+
+            eh.DateOfTest = DateTime.UtcNow;
+            eh.Result = eh2.Exam.compare(eh.Exam);
+            eh.StatusId = (eh.Result >= eh.PassingScore) ? 3 : 2;
+
+            if (ExamHistoryDAO.update(eh) == -1) return -1;
+
+            return eh.Result;
+            return eh2.Exam.compare(eh.Exam);
         }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public int deleteModeratorAccountById(int id)
+        public Exam getExamById(int id)
         {
-            if (identification(Authentication.Username, Authentication.Password)) return -3;
-            if (isAdmin(Authentication.Username))
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
             {
-                Account account = AccountDAO.getById(id);
-                if (isModerator(account.Username))
-                    return AccountDAO.deleteById(id);
-                else
-                    return -4;
-            } else
-            {
-                return -2;
-            }
-           
-        }
-
-
-
-        [WebMethod]
-        public int addStudent(Student student)
-        {
-            return StudentDAO.add(student);
-        }
-
-
-
-        [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
-        public int addUniversity(University uni)
-        {
-            if (identification(Authentication.Username, Authentication.Password)
-                && (isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
-            {
-
-                return UniversityDAO.add(uni);
-            }
-            return -1;
-        }
-
-
-        [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
-        public int addDepartment(Department d)
-        {
-            if (identification(Authentication.Username, Authentication.Password)
-                && (isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
-            {
-
-                return DepartmentDAO.add(d);
-            }
-            return -1;
-        }
-
-        [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
-        public int addStudentGroup(StudentGroup s)
-        {
-            if (identification(Authentication.Username, Authentication.Password)
-                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
-            {
-
-                return StudentGroupDAO.add(s);
-            }
-            return -1;
-        }
-
-
-
-        [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
-        public List<StudentGroup> getAllStudenyGroupByManagerId(int id)
-        {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (identification(Authentication.Username, Authentication.Password)
-                            && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
-            {
-
-                return StudentGroupDAO.getAllByManagerId(id);
+                Exam exam = ExamDAO.getById(id);
+                if (isTeacher(Authentication.Email))
+                {
+                    Account account = AccountDAO.getByEmail(Authentication.Email);
+                    Account examAcc = AccountDAO.getById(exam.AuthorId);
+                    if (account.DepartmentId != examAcc.DepartmentId) return null;
+                }
+                return exam;
             }
             return null;
         }
-
 
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
         public int addExamHistory(ExamHistory ex)
         {
-            if (identification(Authentication.Username, Authentication.Password)
-                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
             {
-
+                Account acc = AccountDAO.getByEmail(Authentication.Email);
+                ex.TeacherId = acc.Id;
+                ex.StatusId = 1;
                 return ExamHistoryDAO.add(ex);
             }
-            return -1;
+            return -2;
         }
 
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public ExamHistory getExamHistoryById(int id)
+        {
+            if (identification(Authentication.Email, Authentication.Password) && isStudent(Authentication.Email))
+            {
+
+                Account acc = AccountDAO.getByEmail(Authentication.Email);
+                ExamHistory ex = ExamHistoryDAO.getById(id);
+                ex.Exam.clearAnswer();
+                if (ex.StudentId != acc.Id) return null;
+                return ex;
+
+
+
+            }
+            return null;
+        }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
         public List<ExamHistory> getAllExamHistoryByStudentId(int id)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
-            if (identification(Authentication.Username, Authentication.Password))
+            if (identification(Authentication.Email, Authentication.Password))
             {
+                if (isStudent(Authentication.Email))
+                {
+                    Account acc = AccountDAO.getByEmail(Authentication.Email);
+                    if (id != acc.Id) return null;
+                    
+                }
+                return ExamHistoryDAO.getAllByStudentId(id);
+            }
+            return null;
+        }
 
-                return ExamHistoryDAO.getAllByStudentId(account.Id);
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public List<ExamHistory> getAllExamHistoryByTeacherId(int accountId, int examId)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                if (isTeacher(Authentication.Email))
+                {
+                    Account acc = AccountDAO.getByEmail(Authentication.Email);
+                    if (accountId != acc.Id) return null;
+
+                }
+                return ExamHistoryDAO.getAllByTeacherId(accountId, examId);
             }
             return null;
         }
@@ -215,137 +189,154 @@ namespace WebServiceUniversus
 
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod(Description = @"<H2>Add new exam</H2>
-        <br><b>Return:</b>
-        <br>1 if exam added,
-        <br> o if  exam did not add,
-        <br> -1 if error")]
+        [WebMethod]
         public int addExam(Exam e)
         {
-            if (identification(Authentication.Username, Authentication.Password)
-                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
             {
-
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                e.AuthorId = account.Id;
                 return ExamDAO.add(e);
             }
-            return -1;
+            return -2;
         }
+
+        //--- ACCOUNT ---
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public int addStudentToGroup(int studentId, int groupId)
+        public Account getAccount()
         {
-            if (identification(Authentication.Username, Authentication.Password)
-                && (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username)))
+            if (identification(Authentication.Email, Authentication.Password))
             {
-                Student student = StudentDAO.getById(studentId);
-                student.GroupId = groupId;
-                return StudentDAO.update(student);
-            }
-            return -1;
-        }
-
-        [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
-        public bool sendMessage(int toUserId, string strMess)
-        {
-            
-            if (identification(Authentication.Username, Authentication.Password))
-            {
-                Account account = AccountDAO.getByUsername(Authentication.Username);
-                MessageDAO.add(account.Id, toUserId, strMess);
-                return true;
-            }
-            return false;
-        }
-
-
-        [WebMethod]
-        public List<University> getAllUniversities()
-        {
-            return UniversityDAO.getAll();
-        }
-
-        [WebMethod]
-        public List<Exam> getAllExams()
-        {
-            return ExamDAO.getAll();
-        }
-
-        [WebMethod]
-        public Exam getExamById(int id)
-        {
-            Exam exam = ExamDAO.getById(id);
-            exam.clearAnswer();
-            return exam;
-        }
-
-        [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
-        public List<string> getDialogs()
-        {
-            if (identification(Authentication.Username, Authentication.Password))
-            {
-                Account account = AccountDAO.getByUsername(Authentication.Username);
-                return MessageDAO.getDialogs(account.Id);
+                return AccountDAO.getByEmail(Authentication.Email);
             }
             return null;
         }
 
-        [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public List<Message> getDialog(int userId)
+        public Account getAccountById(int id)
         {
-            
-            if (identification(Authentication.Username, Authentication.Password))
-            {
-                Account account = AccountDAO.getByUsername(Authentication.Username);
-                return MessageDAO.getDialog(account.Id, userId);
-            }
-            return null;
+            return AccountDAO.getByIdWithoutPassword(id);
         }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public float checkExam(Exam exam)
+        public int updateAccount(Account account)
+        {
+            Account acc = AccountDAO.getByEmail(Authentication.Email);
+            account.Id = acc.Id;
+            account.PasswordMD5 = acc.PasswordMD5;
+            account.Email = acc.Email;
+
+            return AccountDAO.update(account);
+
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int deleteAccountById(int id)
         {
 
+            if (identification(Authentication.Email, Authentication.Password)
+                  && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                Account account = AccountDAO.getById(id);
+                if (account == null) return 0;
+                if ((account.RoleId == 3 || account.RoleId == 4) && isModerator(Authentication.Email))
+                {
+                    return -3;
+                }
+                MessageDAO.deleteAllMessageByUserId(id);
+                if (account.RoleId == 1) StudentToGroupDAO.deleteAllByUserId(id);
+                if (account.RoleId == 2) TeacherToGroupDAO.deleteAllByUserId(id);
+                return AccountDAO.deleteById(id);
+            }
+            return -2;
+        }
 
-        	//!!!TODO реализовать оценку тестов
-        	// первональный тест храниться в БД и достаётся оттуда с помощью метода
-        	// ExamDAO.getById(exam.Id)
-        	// содержимое теста хранится в XML формате (пример скину)
-        	// достать содержимое XML можно из св-ства exam.Content
-        	// необходимо распарсить данные из XML 
-        	// начало примерно такое 
-        	//  Exam originalExam = ExamDAO.getById(exam.Id);
-            // XmlDocument xDoc1 = new XmlDocument();
-            // xDoc1.LoadXml(exam.Content);
-            // XmlElement xRoot = xDoc1.DocumentElement;
-            // дальше см. доки https://metanit.com/sharp/tutorial/16.2.php
-            // на выходе должно быть процент правльных ответов представленные от 0 до 1.0
-            // т.е. 1 -- 100% правильных ответов
+        [WebMethod]
+        public List<Account> getAllStudents()
+        {
+            return AccountDAO.getAllByRoleId(1);
+        }
 
-            Exam originalExam = ExamDAO.getById(exam.Id);
+        [WebMethod]
+        public List<Account> getAllTeachers()
+        {
+            return AccountDAO.getAllByRoleId(2);
+        }
 
-            XmlDocument xDoc1 = new XmlDocument();
-            xDoc1.LoadXml(exam.Content);
-            XmlElement xRoot = xDoc1.DocumentElement;
 
-            XmlDocument xDoc2 = new XmlDocument();
-            xDoc2.LoadXml(exam.Content);
-            XmlElement xRoot1 = xDoc2.DocumentElement;
+        [WebMethod]
+        public List<Account> getAllModerators()
+        {
+            return AccountDAO.getAllByRoleId(3);
+        }
 
-            return 0.0f;
+        [WebMethod]
+        public List<Account> getAllAdmins()
+        {
+            return AccountDAO.getAllByRoleId(4);
+        }
+
+        [WebMethod]
+        public int addStudent(Account student)
+        {
+            student.RoleId = 1;
+            student.PasswordMD5 = AccountDAO.getMD5(student.PasswordMD5);
+            return AccountDAO.add(student);
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addTeacher(Account account)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                  &&
+                  (isAdmin(Authentication.Email) || isModerator(Authentication.Email)) )
+            {
+                account.RoleId = 2;
+                return AccountDAO.add(account);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addModerator(Account account)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                  && isAdmin(Authentication.Email))
+            {
+                account.RoleId = 3;
+                return AccountDAO.add(account);
+            }
+            return -2;
+        }
+
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addAdmin(Account account)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                  && isAdmin(Authentication.Email))
+            {
+                account.RoleId = 4;
+                return AccountDAO.add(account);
+            }
+            return -2;
         }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
         public int getId()
         {
-            if ( identification(Authentication.Username, Authentication.Password))
+            if (identification(Authentication.Email, Authentication.Password))
             {
-                return AccountDAO.getByUsername(Authentication.Username).Id;
+                return AccountDAO.getByEmail(Authentication.Email).Id;
             }
             return -2;
         }
@@ -356,80 +347,612 @@ namespace WebServiceUniversus
             return RoleDAO.getRoleByUserId(id);
         }
 
-        [WebMethod]
-        public int getUserIdByUsername(string username)
-        {
-            if (username == null) return -1;
-            Account account = AccountDAO.getByUsername(username);
-            if (account == null) return -2;
-            return account.Id;
-        }
+        //--- CHAT ---
 
-        [WebMethod]
-        public string getUsernameById(int id)
-        {
-            Account account = AccountDAO.getById(id);
-            if (account == null) return null;
-            return account.Username;
-        }
 
+        [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public Subject getSubjectById(int id)
+        public int getCountNewMessages(int userId)
         {
-            return SubjectDAO.getById(id);
-        }
-
-        [WebMethod]
-        public List<Subject> getAllSubject()
-        {
-            return SubjectDAO.getAll();
+            if (identification(Authentication.Email, Authentication.Password))
+            {
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                return MessageDAO.getCountNewMessages(userId, account.Id);
+            }
+            return -2;
         }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public int updateSubject(Subject subject)
+        public Message getLastMessage(int userId)
         {
-            if (identification(Authentication.Username, Authentication.Password)) return -2;
-            if (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username))
+            if (identification(Authentication.Email, Authentication.Password))
             {
-                return SubjectDAO.update(subject);
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                return MessageDAO.getLastMessage(userId, account.Id);
             }
-            else
-            {
-                return -3;
-            }
+            return null;
         }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public int addSubject(Subject subject)
+        public List<Account> getDialogs()
         {
-            if (identification(Authentication.Username, Authentication.Password)) return -2;
-            if (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username))
+            if (identification(Authentication.Email, Authentication.Password))
             {
-                return SubjectDAO.add(subject);
-            } else
-            {
-                return -3;
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                return MessageDAO.getDialogs(account.Id);
             }
+            return null;
         }
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
-        public int deleteSubjectById(int id)
+        public List<Message> getDialog(int userId)
         {
-            if (identification(Authentication.Username, Authentication.Password)) return -2;
-            if (isTeacher(Authentication.Username) || isModerator(Authentication.Username) || isAdmin(Authentication.Username))
+
+            if (identification(Authentication.Email, Authentication.Password))
             {
-                return SubjectDAO.deleteById(id);
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                return MessageDAO.getDialog(account.Id, userId);
             }
-            else
+            return null;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public List<Message> getNewMessages(int userId)
+        {
+
+            if (identification(Authentication.Email, Authentication.Password))
             {
-                return -3;
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                return MessageDAO.getDialog(userId, account.Id);
             }
+            return null;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public bool sendMessage(int toUserId, string strMess)
+        {
+            
+            if (identification(Authentication.Email, Authentication.Password))
+            {
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                MessageDAO.add(account.Id, toUserId, strMess);
+                return true;
+            }
+            return false;
+        }
+
+
+        //---UNIVERSITY---
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addUniversity(University uni)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+
+                return UniversityDAO.add(uni);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int updateUniversity(University uni)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+
+                return UniversityDAO.update(uni);
+            }
+            return -2;
         }
 
         [WebMethod]
+        public University getUniversityById(int id)
+        {
+            return UniversityDAO.getById(id);
+        }
+
+        [WebMethod]
+        public University getUniversityByIdLite(int id)
+        {
+            return UniversityDAO.getByIdLite(id);
+        }
+
+
+        [WebMethod]
+        public List<University> getAllUniversities()
+        {
+            return UniversityDAO.getAll();
+        }
+
+        [WebMethod]
+        public List<University> getAllUniversitiesLite()
+        {
+            return UniversityDAO.getAllLite();
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int deleteUniversityById(int id)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+
+                return UniversityDAO.deleteById(id);
+            }
+            return -2;
+        }
+
+
+        //---Department---
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addDepartment(Department d)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+
+                return DepartmentDAO.add(d);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int updateDepartment(Department d)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+
+                return DepartmentDAO.update(d);
+            }
+            return -2;
+        }
+
+        [WebMethod]
+        public Department getDepartmentById(int id)
+        {
+            return DepartmentDAO.getById(id);
+        }
+
+        [WebMethod]
+        public Department getDepartmentByIdLite(int id)
+        {
+            return DepartmentDAO.getByIdLite(id);
+        }
+
+        [WebMethod]
+        public List<Department> getAllDepartmentsByUniversityId(int id)
+        {
+            return DepartmentDAO.getAllByUniversityId(id);
+        }
+
+        [WebMethod]
+        public List<Department> getAllDepartmentsByUniversityIdLite(int id)
+        {
+            return DepartmentDAO.getAllByUniversityIdLite(id);
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int deleteDepartmentById(int id)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+
+                return DepartmentDAO.deleteById(id);
+            }
+            return -2;
+        }
+
+        //--- STUDENT GROUP ---
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod]
+        public int addStudentGroup(StudentGroup s)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+
+                return StudentGroupDAO.add(s);
+            }
+            return -2;
+        }
+
+
+        [WebMethod]
+        public StudentGroup getStudentGroupById(int id)
+        {
+            return StudentGroupDAO.getById(id);
+        }
+
+        [WebMethod]
+        public List<StudentGroup> getAllStudentGroupByDepartmentId(int id)
+        {
+            return StudentGroupDAO.getAllByDepartmentId(id);
+        }
+
+        [WebMethod]
+        public StudentGroup getStudentGroupByIdLite(int id)
+        {
+            return StudentGroupDAO.getByIdLite(id);
+        }
+
+        [WebMethod]
+        public List<StudentGroup> getAllStudentGroupByDepartmentIdLite(int id)
+        {
+            return StudentGroupDAO.getAllByDepartmentIdLite(id);
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : преподватель не имеет полномочий добавлять студента в группу <br>
+        -4 : аккаунт под studentId не является студентом <br>")]
+        public int addStudentToGroup(int studentId, int groupId)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+            && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                if (isTeacher(Authentication.Email)) {
+                    TeacherToGroup ttg = new TeacherToGroup();
+                    ttg.AccountId = AccountDAO.getByEmail(Authentication.Email).Id;
+                    ttg.GroupId = groupId;
+                    if (!TeacherToGroupDAO.consists(ttg)) {
+                        return -3;
+                    }
+                }
+                if (!isStudent(studentId))
+                {
+                    return -4;
+                }
+                StudentToGroup stg = new StudentToGroup();
+                stg.AccountId = studentId;
+                stg.GroupId = groupId;
+                return StudentToGroupDAO.add(stg);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : преподаватель не имеет полномочий добавлять студента в группу <br>
+        -4 : аккаунт под teacherId не является преподавателем <br>")]
+        public int addTeacherToGroup(int teacherId, int groupId)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+            && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                if (isTeacher(Authentication.Email))
+                {
+                    TeacherToGroup ttg = new TeacherToGroup();
+                    ttg.AccountId = AccountDAO.getByEmail(Authentication.Email).Id;
+                    ttg.GroupId = groupId;
+                    if (!TeacherToGroupDAO.consists(ttg))
+                    {
+                        return -3;
+                    }
+                }
+                if (!isTeacher(teacherId))
+                {
+                    return -4;
+                }
+                TeacherToGroup stg = new TeacherToGroup();
+                stg.AccountId = teacherId;
+                stg.GroupId = groupId;
+                return TeacherToGroupDAO.add(stg);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : преподаватель не имеет полномочий добавлять студента в группу <br>
+        -4 : аккаунт под studentId не является студентом <br>")]
+        public int deleteStudentFromGroup(int studentId, int groupId)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+            && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                if (isTeacher(Authentication.Email))
+                {
+                    TeacherToGroup ttg = new TeacherToGroup();
+                    ttg.AccountId = AccountDAO.getByEmail(Authentication.Email).Id;
+                    ttg.GroupId = groupId;
+                    if (!TeacherToGroupDAO.consists(ttg))
+                    {
+                        return -3;
+                    }
+                }
+                if (!isStudent(studentId))
+                {
+                    return -4;
+                }
+                StudentToGroup stg = new StudentToGroup();
+                stg.AccountId = studentId;
+                stg.GroupId = groupId;
+                return StudentToGroupDAO.delete(stg);
+            }
+            return -2;
+        }
+
+        [WebMethod]
+        public List<Account> getAllStudentsByGroupId(int id)
+        {
+            return StudentToGroupDAO.getAllAccountByGroupId(id);
+        }
+
+        [WebMethod]
+        public List<Account> getAllTeachersByGroupId(int id)
+        {
+            return TeacherToGroupDAO.getAllAccountByGroupId(id);
+        }
+
+        [WebMethod]
+        public List<StudentGroup> getAllGroupsByTeacherId(int id)
+        {
+            return TeacherToGroupDAO.getAllGroupsByUserIdLite(id);
+        }
+
+        [WebMethod]
+        public List<StudentGroup> getAllGroupsByStudentId(int id)
+        {
+            return StudentToGroupDAO.getAllGroupsByUserIdLite(id);
+        }
+
+        [WebMethod(Description =
+        @"
+        Проверяет состоит ли студент в группе <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
+        public bool isStudentMemberOfGroup(int idAccount, int idGroup)
+        {
+            StudentToGroup model = new StudentToGroup();
+            model.AccountId = idAccount;
+            model.GroupId = idGroup;
+            return StudentToGroupDAO.consists(model);
+        }
+
+        [WebMethod(Description =
+        @"
+        Проверяет состоит ли преподаватель в группе <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
+        public bool isTeacherMemberOfGroup(int idAccount, int idGroup)
+        {
+            TeacherToGroup model = new TeacherToGroup();
+            model.AccountId = idAccount;
+            model.GroupId = idGroup;
+            return TeacherToGroupDAO.consists(model);
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"
+        Обновление данных группы <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если состоит в группе) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : преподаватель не имеет полномочий изменять группу <br>
+        -4 : аккаунт под studentId не является студентом <br>")]
+        public int updateStudentGroup(StudentGroup sg)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                if (isTeacher(Authentication.Email))
+                {
+                    Account acc = AccountDAO.getByEmail(Authentication.Email);
+                    TeacherToGroup model = new TeacherToGroup();
+                    model.AccountId = acc.Id;
+                    model.GroupId = sg.Id;
+                    if (!TeacherToGroupDAO.consists(model)) return -3;
+                }
+                return StudentGroupDAO.update(sg);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"
+        Удаление группы по Id<br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если состоит в группе) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : преподаватель не имеет полномочий удалять группу <br>
+        -4 : аккаунт под studentId не является студентом <br>")]
+        public int deleteStudentGroup(int id)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+                && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                if (isTeacher(Authentication.Email))
+                {
+                    Account acc = AccountDAO.getByEmail(Authentication.Email);
+                    TeacherToGroup model = new TeacherToGroup();
+                    model.AccountId = acc.Id;
+                    model.GroupId = id;
+                    if (!TeacherToGroupDAO.consists(model)) return -3;
+                }
+                return StudentGroupDAO.deleteById(id);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"
+        Выход из состава группы <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + (если состоит в группе) <br>
+        Преподаватель: + (если состоит в группе) <br>
+        Модератор: - <br>
+        Админ: - <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : вы не состоите в группе <br>
+        -4 : аккаунт под studentId не является студентом <br>")]
+        public int leaveStudentGroupById(int id)
+        {
+            if (identification(Authentication.Email, Authentication.Password))
+            {
+                if (isTeacher(Authentication.Email))
+                {
+                    Account acc = AccountDAO.getByEmail(Authentication.Email);
+                    TeacherToGroup model = new TeacherToGroup();
+                    model.AccountId = acc.Id;
+                    model.GroupId = id;
+                    if (!TeacherToGroupDAO.consists(model)) return -3;
+                    return TeacherToGroupDAO.delete(model);
+                } else if (isStudent(Authentication.Email))
+                {
+                    Account acc = AccountDAO.getByEmail(Authentication.Email);
+                    StudentToGroup model = new StudentToGroup();
+                    model.AccountId = acc.Id;
+                    model.GroupId = id;
+                    if (!StudentToGroupDAO.consists(model)) return -3;
+                    return StudentToGroupDAO.delete(model);
+                } else
+                {
+                    return -2;
+                }
+            }
+            return -2;
+        }
+
+        //--- TUTORIAL ---
+
+        [WebMethod(Description =
+        @"
+        Выдаёт все методические материалы группы по id <br>
+        Аутентификация и авторизация не трубуется")]
+        public List<Tutorial> getAllTutorialByStudentGroupId(int id)
+        {
+            return TutorialDAO.getAllByStudentGroupId(id);
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"Добавление методических материалов <br>
+        Требуется аутентификация и авторизация <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если состоит в группе) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : преподватель не имеет полномочий добавлять методические материалы в группу <br>")]
+        public int addTutorial(Tutorial model)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+            && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                if (account.RoleId == RoleDAO.getByName("teacher").Id)
+                {
+                    TeacherToGroup ttg = new TeacherToGroup();
+                    ttg.AccountId = account.Id;
+                    ttg.GroupId = model.StudentGroupId;
+                    if (!TeacherToGroupDAO.consists(ttg))
+                    {
+                        return -3;
+                    }
+                }
+                model.AuthorId = account.Id;
+                return TutorialDAO.add(model);
+            }
+            return -2;
+        }
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"Удаление методических материалов <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если состоит в группе) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Коды ошибок <br>
+        Требуется аутентификация и авторизация <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : преподватель не имеет полномочий удалять методические материалы в группе <br>
+        -4 : методический материал по указанному id не найден")]
+        public int deleteTutorial(int id)
+        {
+            if (identification(Authentication.Email, Authentication.Password)
+            && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
+            {
+                Account account = AccountDAO.getByEmail(Authentication.Email);
+                Tutorial tutorial = TutorialDAO.getById(id);
+                if (tutorial == null) return -4;
+                if (account.RoleId == RoleDAO.getByName("teacher").Id)
+                {
+                    TeacherToGroup ttg = new TeacherToGroup();
+                    ttg.AccountId = account.Id;
+                    ttg.GroupId = tutorial.StudentGroupId;
+                    if (!TeacherToGroupDAO.consists(ttg))
+                    {
+                        return -3;
+                    }
+                }
+                return TutorialDAO.deleteById(id);
+            }
+            return -2;
+        }
+
+
+
         [WebMethod(Description =
         @"Метод для проверки соединения с веб-сервисом <br>
         возвращает полученную в параметре строку + test_123")]
@@ -437,35 +960,43 @@ namespace WebServiceUniversus
         	return test + " test_123";
         }
 
-        private bool identification(string username, string password)
+        private bool identification(string email, string password)
         {
-            Account account = AccountDAO.getByUsername(Authentication.Username);
+            Account account = AccountDAO.getByEmail(email);
             if (account == null) return false; //username not found
-            string passwordMd5 = AccountDAO.getMD5(Authentication.Password);
+            string passwordMd5 = AccountDAO.getMD5(password);
             return passwordMd5 == account.PasswordMD5;
         }
 
-        private bool isStudent(string username)
+        private bool isStudent(string email)
         {
-            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("student").Id;
+            return AccountDAO.getByEmail(email).RoleId == RoleDAO.getByName("student").Id;
         }
 
-        private bool isTeacher(string username)
+        private bool isTeacher(string email)
         {
-            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("teacher").Id;
+            return AccountDAO.getByEmail(email).RoleId == RoleDAO.getByName("teacher").Id;
         }
 
-        private bool isModerator(string username)
+        private bool isModerator(string email)
         {
-            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("moderator").Id;
+            return AccountDAO.getByEmail(email).RoleId == RoleDAO.getByName("moderator").Id;
         }
 
-        private bool isAdmin(string username)
+        private bool isAdmin(string email)
         {
-            return AccountDAO.getByUsername(Authentication.Username).RoleId == RoleDAO.getByName("admin").Id;
+            return AccountDAO.getByEmail(email).RoleId == RoleDAO.getByName("admin").Id;
         }
 
+        private bool isStudent(int id)
+        {
+            return AccountDAO.getById(id).RoleId == RoleDAO.getByName("student").Id;
+        }
 
+        private bool isTeacher(int id)
+        {
+            return AccountDAO.getById(id).RoleId == RoleDAO.getByName("teacher").Id;
+        }
 
 
     }
