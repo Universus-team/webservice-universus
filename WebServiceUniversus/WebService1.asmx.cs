@@ -303,6 +303,17 @@ namespace WebServiceUniversus
 
         //--- ACCOUNT ---
 
+
+        [SoapHeader("Authentication", Required = true)]
+        [WebMethod(Description =
+        @"
+        Получение своего аккаунта. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         [SoapHeader("Authentication", Required = true)]
         [WebMethod]
         public Account getAccount()
@@ -314,14 +325,33 @@ namespace WebServiceUniversus
             return null;
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"Получение аккаунта по его идентификатору (хеш пароля не переда). <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public Account getAccountById(int id)
         {
             return AccountDAO.getByIdWithoutPassword(id);
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Обновление данных аккаунта. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 если всё прошло удачно <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int updateAccount(Account account)
         {
             Account acc = AccountDAO.getByEmail(Authentication.Email);
@@ -334,19 +364,36 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Удаление аккаунта по его идентификатору. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: + (может удалять только преподавателей и студентов)<br>
+        Админ: + (может удалять всех пользователей)<br>
+        Возврат: 1 если всё прошло удачно <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : модератор не может удалить другого модератора или админа")]
         public int deleteAccountById(int id)
         {
 
             if (identification(Authentication.Email, Authentication.Password)
                   && (isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
             {
+                
                 Account account = AccountDAO.getById(id);
                 if (account == null) return 0;
+
+                // если модератор удаляет другого модератора или админа даём ему отказ
                 if ((account.RoleId == 3 || account.RoleId == 4) && isModerator(Authentication.Email))
                 {
                     return -3;
                 }
+                
                 MessageDAO.deleteAllMessageByUserId(id);
                 if (account.RoleId == 1) StudentToGroupDAO.deleteAllByUserId(id);
                 if (account.RoleId == 2) TeacherToGroupDAO.deleteAllByUserId(id);
