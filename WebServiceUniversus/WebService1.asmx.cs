@@ -13,6 +13,7 @@ namespace WebServiceUniversus
     // Developer : Mikhail Kurochkin
     // e-mail : mkv-1724@mail.ru
     // address : city Vladimir state Russia
+    // License : MIT
     // sorry all comments in Russians
 
 	// Класс для хранения аутентификационных данных
@@ -831,7 +832,19 @@ namespace WebServiceUniversus
         //---Department---
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавление нового отдела университета. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если отдел был добавлен <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int addDepartment(Department d)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -844,7 +857,19 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Обновить данные существующего отдела университета. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если отдел был обновлён <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int updateDepartment(Department d)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -856,32 +881,61 @@ namespace WebServiceUniversus
             return -2;
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение объекта отдела университета по его идентификатору. <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public Department getDepartmentById(int id)
         {
             return DepartmentDAO.getById(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение объекта отдела университета по его идентификатору без тяжеловесных дополнительных данных. <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public Department getDepartmentByIdLite(int id)
         {
             return DepartmentDAO.getByIdLite(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка всех отделов университета по его идентификатору (университета). <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
+        ]
         public List<Department> getAllDepartmentsByUniversityId(int id)
         {
             return DepartmentDAO.getAllByUniversityId(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка всех отделов университета по его идентификатору (университета) без тяжеловесных дополнительных данных. <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public List<Department> getAllDepartmentsByUniversityIdLite(int id)
         {
             return DepartmentDAO.getAllByUniversityIdLite(id);
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Удалить существующий объект отдела университета. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если отдел был удалён <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int deleteDepartmentById(int id)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -896,12 +950,29 @@ namespace WebServiceUniversus
         //--- STUDENT GROUP ---
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавить новую студентческую группу. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если он входит в отдел, в которой добавляется группа) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если группа была добавлена <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>
+        -3 : ошибка, преподаватель не имеет прав добавлять группу в заданный отдел <br>")]
         public int addStudentGroup(StudentGroup s)
         {
             if (identification(Authentication.Email, Authentication.Password)
                 && (isTeacher(Authentication.Email) || isModerator(Authentication.Email) || isAdmin(Authentication.Email)))
             {
+                if (isTeacher(Authentication.Email)) {
+                    Account acc = AccountDAO.getByEmail(Authentication.Email)
+                    if (acc.DepartmentId != s.DepartmentId) return -3;
+                }
 
                 return StudentGroupDAO.add(s);
             }
@@ -909,25 +980,41 @@ namespace WebServiceUniversus
         }
 
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить объект группы студентов по её идентификатору. <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public StudentGroup getStudentGroupById(int id)
         {
             return StudentGroupDAO.getById(id);
         }
 
-        [WebMethod]
+        [WebMethod (Description =
+        @"
+        Получить список объектов группы студентов по идентификатору отдела, в котором они находятся. <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public List<StudentGroup> getAllStudentGroupByDepartmentId(int id)
         {
             return StudentGroupDAO.getAllByDepartmentId(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить объект группы студентов по её идентификатору без дополнительных тяжеловесных данных. <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public StudentGroup getStudentGroupByIdLite(int id)
         {
             return StudentGroupDAO.getByIdLite(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить список объектов группы студентов без дополнительных тяжеловесных данных по идентификатору отдела, в котором они находятся. <br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public List<StudentGroup> getAllStudentGroupByDepartmentIdLite(int id)
         {
             return StudentGroupDAO.getAllByDepartmentIdLite(id);
@@ -935,7 +1022,16 @@ namespace WebServiceUniversus
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description =
-        @"Коды ошибок <br>
+        @"
+        Добавить студента в группу <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если является одним из руководителей группы) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если студент был добавлен в группу <br>
+        Коды ошибок <br>
         -1 : ошибка БД <br>
         -2 : ошибка аутентификации или авторизации <br>
         -3 : преподватель не имеет полномочий добавлять студента в группу <br>
@@ -967,7 +1063,16 @@ namespace WebServiceUniversus
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description =
-        @"Коды ошибок <br>
+        @"
+        Добавить преподавателя в группу в качестве одного из руководителей этой группы. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если он входит в отдел, в которой добавляется группа) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если группа была добавлена <br>
+        Коды ошибок <br>
         -1 : ошибка БД <br>
         -2 : ошибка аутентификации или авторизации <br>
         -3 : преподаватель не имеет полномочий добавлять студента в группу <br>
