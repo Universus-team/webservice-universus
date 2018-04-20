@@ -10,8 +10,12 @@ using System.Xml;
 namespace WebServiceUniversus
 {
 
+    // Developer : Mikhail Kurochkin
+    // e-mail : mkv-1724@mail.ru
+    // address : city Vladimir state Russia
+    // sorry all comments in Russians
+
 	// Класс для хранения аутентификационных данных
-	// 
     public class AuthHeader : SoapHeader
     {
         public string Email;
@@ -694,7 +698,12 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Функция отправки сообщения от текущего пользователя к пользователю с идентификатором toUserId. <br>
+        Имеют доступ: <br>
+        Все зарегистрированные пользователи <br>
+        Возврат: true - если сообщение было отправлено, иначе false  <br>")]
         public bool sendMessage(int toUserId, string strMess)
         {
             
@@ -711,7 +720,19 @@ namespace WebServiceUniversus
         //---UNIVERSITY---
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавить новый университет в систему. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если университет был добавлен <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int addUniversity(University uni)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -724,7 +745,19 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Обновить данные существующего университета. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если университет был добавлен <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int updateUniversity(University uni)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -736,33 +769,53 @@ namespace WebServiceUniversus
             return -2;
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить объект университета по его идентификатору. <br>
+        Имеют доступ: <br>
+        Все пользователи. <br>")]
         public University getUniversityById(int id)
         {
             return UniversityDAO.getById(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить объект университета по его идентификатору без дополнительных тяжеловесных данных. <br>
+        Имеют доступ: <br>
+        Все пользователи. <br>")]
         public University getUniversityByIdLite(int id)
         {
             return UniversityDAO.getByIdLite(id);
         }
 
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить список всех университетов. <br>
+        Имеют доступ: <br>
+        Все пользователи. <br>")]
         public List<University> getAllUniversities()
         {
             return UniversityDAO.getAll();
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получит список всех университетов без дополнительных тяжеловесных данных. <br>
+        Имеют доступ: <br>
+        Все пользователи. <br>")]
         public List<University> getAllUniversitiesLite()
         {
             return UniversityDAO.getAllLite();
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Удалить университет по его идентификатору. <br>
+        Имеют доступ: <br>
+        Все пользователи. <br>")]
         public int deleteUniversityById(int id)
         {
             if (identification(Authentication.Email, Authentication.Password)
