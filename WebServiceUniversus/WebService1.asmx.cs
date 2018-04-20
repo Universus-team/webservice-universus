@@ -1,4 +1,4 @@
-﻿using DatabaseLib;
+using DatabaseLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -393,41 +393,84 @@ namespace WebServiceUniversus
                 {
                     return -3;
                 }
-                
+
+                // удаляем всю историю пользователя
                 MessageDAO.deleteAllMessageByUserId(id);
                 if (account.RoleId == 1) StudentToGroupDAO.deleteAllByUserId(id);
                 if (account.RoleId == 2) TeacherToGroupDAO.deleteAllByUserId(id);
+
+                // удаляем самого пользователя
                 return AccountDAO.deleteById(id);
             }
             return -2;
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка всех студентов системы. <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public List<Account> getAllStudents()
         {
             return AccountDAO.getAllByRoleId(1);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка всех преподавателей системы. <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public List<Account> getAllTeachers()
         {
             return AccountDAO.getAllByRoleId(2);
         }
 
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка всех модераторов системы системы. <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public List<Account> getAllModerators()
         {
             return AccountDAO.getAllByRoleId(3);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение списка всех администраторов системы. <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public List<Account> getAllAdmins()
         {
             return AccountDAO.getAllByRoleId(4);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавление нового студента. <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]        
         public int addStudent(Account student)
         {
             student.RoleId = 1;
@@ -436,7 +479,19 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавление нового преподавателя. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 если всё прошло удачно <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int addTeacher(Account account)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -450,7 +505,19 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавление нового модератора. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: - <br>
+        Админ: + <br>
+        Возврат: 1 если всё прошло удачно <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int addModerator(Account account)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -464,7 +531,19 @@ namespace WebServiceUniversus
 
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Добавление нового администратора. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: - <br>
+        Модератор: - <br>
+        Админ: + <br>
+        Возврат: 1 если всё прошло удачно <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int addAdmin(Account account)
         {
             if (identification(Authentication.Email, Authentication.Password)
@@ -477,7 +556,18 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение идентификатора пользователя. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int getId()
         {
             if (identification(Authentication.Email, Authentication.Password))
@@ -487,7 +577,15 @@ namespace WebServiceUniversus
             return -2;
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получение роли по её идентификаторуи. <br>
+        Имеют доступ: <br>
+        Гость: + <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public Role getRoleById(int id)
         {
             return RoleDAO.getRoleByUserId(id);
@@ -497,7 +595,19 @@ namespace WebServiceUniversus
 
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить количество новых сообщений для некого конкретного пользователя. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: количество новых сообщений пользователя <br>
+        Коды ошибок <br>
+        -1 : ошибка БД <br>
+        -2 : ошибка аутентификации или авторизации <br>")]
         public int getCountNewMessages(int userId)
         {
             if (identification(Authentication.Email, Authentication.Password))
@@ -509,7 +619,15 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить последнее сообщение пользователя. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public Message getLastMessage(int userId)
         {
             if (identification(Authentication.Email, Authentication.Password))
@@ -520,8 +638,17 @@ namespace WebServiceUniversus
             return null;
         }
 
+
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить все диалоги пользователя в виде списка аккаунтов пользователей, с котороми открыт диалог. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: + <br>
+        Преподаватель: + <br>
+        Модератор: + <br>
+        Админ: + <br>")]
         public List<Account> getDialogs()
         {
             if (identification(Authentication.Email, Authentication.Password))
@@ -533,7 +660,11 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить все сообщения диалога текущего пользователя с пользователем под идентификатором userId. <br>
+        Имеют доступ: <br>
+        Все зарегистрированные пользователи")]
         public List<Message> getDialog(int userId)
         {
 
@@ -546,7 +677,11 @@ namespace WebServiceUniversus
         }
 
         [SoapHeader("Authentication", Required = true)]
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить список новых сообщений для текущего пользователя от пользователя под идентификатором userId. <br>
+        Имеют доступ: <br>
+        Все зарегистрированные пользователи <br>")]
         public List<Message> getNewMessages(int userId)
         {
 
