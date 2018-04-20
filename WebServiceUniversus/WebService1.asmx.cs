@@ -1068,7 +1068,7 @@ namespace WebServiceUniversus
         Имеют доступ: <br>
         Гость: - <br>
         Студент: - <br>
-        Преподаватель: + (если он входит в отдел, в которой добавляется группа) <br>
+        Преподаватель: + (если он один из руководителей группы) <br>
         Модератор: + <br>
         Админ: + <br>
         Возврат: 1 - если группа была добавлена <br>
@@ -1106,7 +1106,16 @@ namespace WebServiceUniversus
 
         [SoapHeader("Authentication", Required = true)]
         [WebMethod(Description =
-        @"Коды ошибок <br>
+        @"
+        Удалить студента из группы. <br>
+        Имеют доступ: <br>
+        Гость: - <br>
+        Студент: - <br>
+        Преподаватель: + (если состоит в группе) <br>
+        Модератор: + <br>
+        Админ: + <br>
+        Возврат: 1 - если студент был удалён из группы <br>
+        Коды ошибок <br>
         -1 : ошибка БД <br>
         -2 : ошибка аутентификации или авторизации <br>
         -3 : преподаватель не имеет полномочий добавлять студента в группу <br>
@@ -1138,25 +1147,41 @@ namespace WebServiceUniversus
             return -2;
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить список всех студентов, которые состоят в группе по идентификатором id<br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public List<Account> getAllStudentsByGroupId(int id)
         {
             return StudentToGroupDAO.getAllAccountByGroupId(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить список всех преподавателей, которые состоят в группе по идентификатором id<br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public List<Account> getAllTeachersByGroupId(int id)
         {
             return TeacherToGroupDAO.getAllAccountByGroupId(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить список всех групп, в которых состоит преподаватель<br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public List<StudentGroup> getAllGroupsByTeacherId(int id)
         {
             return TeacherToGroupDAO.getAllGroupsByUserIdLite(id);
         }
 
-        [WebMethod]
+        [WebMethod(Description =
+        @"
+        Получить список всех групп, в которых состоит студент<br>
+        Имеют доступ: <br>
+        Все пользователи системы <br>")]
         public List<StudentGroup> getAllGroupsByStudentId(int id)
         {
             return StudentToGroupDAO.getAllGroupsByUserIdLite(id);
